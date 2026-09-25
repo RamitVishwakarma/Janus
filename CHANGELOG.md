@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Regression tests pinning down that reordering the rotation never alters, drops
+  or duplicates a saved account. Accounts are keyed by UUID rather than by
+  position, so their place in the list is not part of how they are stored.
+
 ## [1.0.0] - 2026-09-25
 
 First public release.
