@@ -1,0 +1,16 @@
+# Build output
+.build/
+Janus.app/
+dist/
+*.dmg
+*.zip
+*.icns
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+DerivedData/
+
+# macOS
+.DS_Store
