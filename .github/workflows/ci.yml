@@ -50,7 +50,7 @@ jobs:
         run: scripts/package.sh
 
       # A build of every commit on main, downloadable without waiting for a tag.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Switchboard-${{ github.sha }}
           path: dist/
