@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         This is the easiest thing to contribute, and a pull request is welcome
-        instead of an issue. See [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+        instead of an issue. See [CONTRIBUTING.md](https://github.com/RamitVishwakarma/Janus/blob/main/CONTRIBUTING.md).
 
   - type: input
     id: tool

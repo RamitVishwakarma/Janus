@@ -17,7 +17,7 @@ jobs:
     name: Build and publish
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Work out which tag this is
         id: tag
