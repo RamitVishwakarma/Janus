@@ -26,6 +26,7 @@ CI run the suite for you.
 | `Sources/Switchboard` | The SwiftUI app: window, menu bar item, view models. |
 | `Tests/SwitchboardCoreTests` | Tests for everything in `SwitchboardCore`. |
 | `scripts/` | Build-time helpers, called by `build.sh` and CI. |
+| `Resources/` | The app icon artwork. `scripts/make-icon.swift` turns `AppIcon.png` into the `.icns` at build time, so only the one source image is committed. |
 
 Logic goes in `SwitchboardCore` so it can be tested. If a change to the app
 target contains a decision worth asserting, that decision probably belongs in
