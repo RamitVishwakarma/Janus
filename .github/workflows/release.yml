@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release, e.g. v1.0.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out which tag this is
+        id: tag
+        run: echo "name=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      # Refuses a tag that disagrees with VERSION or with the changelog, so a
+      # release can never ship one version while claiming another.
+      - name: Check the version
+        run: scripts/check-version.sh "${{ steps.tag.outputs.name }}"
+
+      - name: Test
+        run: swift test
+
+      - name: Build a universal Janus.app
+        run: UNIVERSAL=1 ./build.sh
+
+      - name: Package
+        run: scripts/package.sh
+
+      - name: Release notes
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          {
+            scripts/release-notes.sh "$VERSION"
+            echo
+            echo "## Installing"
+            echo
+            echo 'Download the `.dmg`, open it, and drag Janus to Applications.'
+            echo 'The build is ad-hoc signed rather than notarised, so clear the quarantine flag once:'
+            echo
+            echo '```sh'
+            echo 'xattr -dr com.apple.quarantine /Applications/Janus.app'
+            echo 'open /Applications/Janus.app'
+            echo '```'
+            echo
+            echo 'Universal build for Apple silicon and Intel, macOS 13 or later.'
+            echo
+            echo '## Checksums'
+            echo
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } > release-notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.tag.outputs.name }}" \
+            --title "Janus ${{ steps.tag.outputs.name }}" \
+            --notes-file release-notes.md \
+            --verify-tag \
+            dist/*.dmg dist/*.zip dist/SHA256SUMS.txt
