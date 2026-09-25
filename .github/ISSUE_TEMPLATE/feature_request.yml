@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest something Switchboard should do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you are in, not the solution you have in mind.
+      placeholder: |
+        When I have three accounts, I cannot tell which one …
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you have tried instead
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: |
+        Switchboard is deliberately small: it switches accounts and clears caches,
+        on macOS, without network access or third-party dependencies.
+      options:
+        - label: I have read the README and this fits what the app is for.
+          required: true

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+  app:
+    name: Package the app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build a universal Switchboard.app
+        run: UNIVERSAL=1 ./build.sh
+
+      - name: Check both architectures are present
+        run: |
+          lipo -info Switchboard.app/Contents/MacOS/Switchboard | tee /dev/stderr \
+            | grep -q 'x86_64 arm64\|arm64 x86_64'
+
+      - name: Check the signature
+        run: codesign --verify --strict --verbose=2 Switchboard.app
+
+      - name: Package
+        run: scripts/package.sh
+
+      # A build of every commit on main, downloadable without waiting for a tag.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Switchboard-${{ github.sha }}
+          path: dist/
+          retention-days: 14
+
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-version.sh

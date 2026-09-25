@@ -1,0 +1,41 @@
+name: Cache to add
+description: Suggest a cache directory the Storage tab should offer to clear
+labels: ["cache-catalogue", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the easiest thing to contribute, and a pull request is welcome
+        instead of an issue — see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+
+  - type: input
+    id: tool
+    attributes:
+      label: Which tool creates it
+      placeholder: "Cargo (Rust)"
+    validations:
+      required: true
+
+  - type: input
+    id: path
+    attributes:
+      label: Path, relative to your home directory
+      placeholder: ".cargo/registry"
+    validations:
+      required: true
+
+  - type: textarea
+    id: cost
+    attributes:
+      label: What is lost by clearing it
+      description: It must regenerate itself. If losing it costs work rather than time, it does not belong here.
+      placeholder: "Downloaded crate sources. The next build redownloads them."
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owning app, if one holds it open
+      description: Bundle identifier, if an app must be quit before the cache can be cleared safely.
+      placeholder: "com.apple.dt.Xcode"
