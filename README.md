@@ -8,7 +8,7 @@ have noticed how much disk the tools they use every day quietly hold onto.
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-lightgrey)
 
-![Janus switching between two saved Claude Code accounts](demo/screenshot.png)
+![Janus switching between two saved Claude Code accounts](demo/demo.gif)
 
 It does two things:
 
