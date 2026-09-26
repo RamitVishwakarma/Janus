@@ -16,6 +16,9 @@ jobs:
   release:
     name: Build and publish
     runs-on: macos-latest
+    outputs:
+      version: ${{ steps.sums.outputs.version }}
+      sha256: ${{ steps.sums.outputs.zip }}
     steps:
       - uses: actions/checkout@v7
 
@@ -37,6 +40,16 @@ jobs:
       - name: Package
         run: scripts/package.sh
 
+      # The cask points at the zip, so its checksum has to leave this job.
+      - name: Read the zip checksum
+        id: sums
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          SHA="$(awk -v want="Janus-${VERSION}.zip" '$2 == want { print $1 }' dist/SHA256SUMS.txt)"
+          test -n "${SHA}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "zip=${SHA}" >> "$GITHUB_OUTPUT"
+
       - name: Release notes
         run: |
           VERSION="$(tr -d '[:space:]' < VERSION)"
@@ -45,7 +58,13 @@ jobs:
             echo
             echo "## Installing"
             echo
-            echo 'Download the `.dmg`, open it, and drag Janus to Applications.'
+            echo 'With Homebrew:'
+            echo
+            echo '```sh'
+            echo 'brew install --cask --no-quarantine ramitvishwakarma/tap/janus'
+            echo '```'
+            echo
+            echo 'Or download the `.dmg`, open it, and drag Janus to Applications.'
             echo 'The build is ad-hoc signed rather than notarised, so clear the quarantine flag once:'
             echo
             echo '```sh'
@@ -71,3 +90,43 @@ jobs:
             --notes-file release-notes.md \
             --verify-tag \
             dist/*.dmg dist/*.zip dist/SHA256SUMS.txt
+
+  # Keeps the Homebrew tap in step with the release, so brew never installs a
+  # version behind the latest one. Turn it on by setting the repository
+  # variable UPDATE_TAP to true and adding a TAP_TOKEN secret, a fine grained
+  # token with contents write on RamitVishwakarma/homebrew-tap.
+  tap:
+    name: Bump the Homebrew cask
+    needs: release
+    if: vars.UPDATE_TAP == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: RamitVishwakarma/homebrew-tap
+          token: ${{ secrets.TAP_TOKEN }}
+
+      - name: Rewrite the version and the checksum
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+          SHA256: ${{ needs.release.outputs.sha256 }}
+        run: |
+          test -n "${VERSION}"
+          test -n "${SHA256}"
+          sed -i -E "s/^  version \".*\"$/  version \"${VERSION}\"/" Casks/janus.rb
+          sed -i -E "s/^  sha256 \".*\"$/  sha256 \"${SHA256}\"/" Casks/janus.rb
+          grep -q "version \"${VERSION}\"" Casks/janus.rb
+          grep -q "sha256 \"${SHA256}\"" Casks/janus.rb
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          if git diff --quiet; then
+            echo "::notice::The cask already points at ${VERSION}."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Janus ${VERSION}"
+          git push
