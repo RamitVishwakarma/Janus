@@ -14,3 +14,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Demo assets
+demo/probe.png
