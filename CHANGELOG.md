@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-26
+
+### Fixed
+
+- Repeated requests for the login keychain password, from Janus and from Claude
+  Code alike. Keychain entries carry a partition list naming the code allowed to
+  open them, and writing them through the Security framework quietly re-stamped
+  that list with Janus's own signature, shutting Claude Code out of its own
+  tokens and shutting Janus out again after every rebuild. Entries now go through
+  `/usr/bin/security`, which is what Claude Code uses and what leaves them in a
+  partition both can reopen. Saved accounts are mended the next time they are
+  switched to.
+- A switch no longer overwrites the live session when the keychain refuses to
+  hand over its tokens. The refusal used to be indistinguishable from nobody
+  being signed in, so the switch carried on and the displaced account was left
+  needing a fresh sign-in.
+- Refresh now folds the signed-in account's figures into its saved copy, so they
+  are not lost when it is switched away from, and says what it could and could
+  not bring up to date. Only the signed-in account's figures can move, which the
+  button now explains rather than leaving people to press it again.
+- A limit whose reset has passed no longer reads "resetting now" forever, and no
+  longer shows the spend of the window that ended as though it were the current
+  one. It is drawn empty with a dash and says "last reset 4h ago"; the weekly
+  figure is left alone until its own reset comes round. Claude Code measures only
+  while a session is running, so the signed-in account is now told to start one,
+  and the help popover explains where the figures come from at all.
+- The window comes forward before any operation that can raise a keychain prompt,
+  so a prompt drawn behind another app no longer looks like a hung switch, and
+  the busy state is cleared on every path out.
+
 ### Added
 
 - Regression tests pinning down that reordering the rotation never alters, drops
@@ -33,5 +63,6 @@ First public release.
   directory and anything held open by a running app.
 - Universal builds published as a `.dmg` and a `.zip` with SHA-256 checksums.
 
-[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RamitVishwakarma/Janus/releases/tag/v1.0.0
