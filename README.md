@@ -8,7 +8,11 @@ have noticed how much disk the tools they use every day quietly hold onto.
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-lightgrey)
 
+[ramitvishwakarma.github.io/Janus](https://ramitvishwakarma.github.io/Janus/)
+
 ![Janus switching between two saved Claude Code accounts](demo/demo.gif)
+
+One click moves the live session, and the account it displaces is saved first.
 
 It does two things:
 
@@ -71,6 +75,8 @@ already. Press **Save current account** and it is captured.
 For the second: sign out of Claude Code, sign in as the other account, come back,
 and press **Save current account** again. From then on both are in the list and
 switching between them is one click, or `⌘S` from the menu bar.
+
+![The Janus window, with both accounts and how much of each limit they have spent](demo/screenshot.png)
 
 The menu bar item shows which account is live. The window shows both accounts
 with how much of their five-hour and weekly limits each has spent. That is the

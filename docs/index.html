@@ -11,149 +11,508 @@
 <meta property="og:image" content="https://ramitvishwakarma.github.io/Janus/social-preview.png">
 <meta property="og:url" content="https://ramitvishwakarma.github.io/Janus/">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0f0f11">
+<script>document.documentElement.className = "js";</script>
 <style>
 :root {
-  --bg: #161618;
-  --panel: #1d1d20;
-  --line: #2a2a2e;
+  --bg: #0f0f11;
+  --bg-soft: #161618;
+  --panel: #1a1a1d;
+  --panel-2: #212126;
+  --line: #2a2a30;
   --text: #f4f4f5;
   --muted: #9a9aa2;
   --dim: #6b6b73;
   --accent: #f28b22;
+  --accent-2: #ffb454;
+  --green: #4cc38a;
+  --ease: cubic-bezier(.22, 1, .36, 1);
 }
+
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
-.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+.wrap { max-width: 840px; margin: 0 auto; padding: 0 24px; position: relative; }
 a { color: var(--text); }
 code, kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.88em;
 }
-
-header { padding: 88px 0 56px; }
-.badge {
-  display: inline-block; font-size: 13px; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 999px;
-  padding: 5px 13px; margin-bottom: 28px;
+kbd {
+  border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 5px; padding: 1px 6px; background: var(--panel);
 }
-h1 { font-size: 58px; line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.03em; }
-.lede { font-size: 22px; color: var(--muted); margin: 0 0 36px; max-width: 30em; }
+
+/* ---------- the thin progress bar at the very top ---------- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+  transform: scaleX(0); transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  z-index: 60;
+}
+
+/* ---------- nav, which arrives once the hero is behind you ---------- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px max(24px, calc(50vw - 420px));
+  background: rgba(15, 15, 17, .72);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transform: translateY(-110%);
+  transition: transform .45s var(--ease), border-color .45s var(--ease);
+}
+nav.up { transform: translateY(0); border-bottom-color: var(--line); }
+nav img { width: 24px; height: 24px; border-radius: 6px; }
+nav .name { font-weight: 600; letter-spacing: -0.01em; }
+nav .spacer { flex: 1; }
+nav a.navlink { color: var(--muted); text-decoration: none; font-size: 15px; }
+nav a.navlink:hover { color: var(--text); }
+nav .btn { padding: 7px 15px; font-size: 14px; }
+@media (max-width: 620px) { nav a.navlink { display: none; } }
+
+/* ---------- hero ---------- */
+header { position: relative; overflow: hidden; padding: 116px 0 40px; }
+.aurora {
+  position: absolute; inset: -30% -40% auto -40%; height: 900px;
+  pointer-events: none; z-index: 0; opacity: .8;
+  filter: blur(64px);
+}
+.aurora i {
+  position: absolute; display: block; border-radius: 50%;
+  mix-blend-mode: screen;
+}
+.aurora i:nth-child(1) {
+  width: 620px; height: 520px; left: 8%; top: 18%;
+  background: radial-gradient(circle at 50% 50%, rgba(242, 139, 34, .55), transparent 68%);
+  animation: drift1 19s var(--ease) infinite alternate;
+}
+.aurora i:nth-child(2) {
+  width: 560px; height: 460px; right: 6%; top: 6%;
+  background: radial-gradient(circle at 50% 50%, rgba(90, 120, 255, .38), transparent 70%);
+  animation: drift2 23s var(--ease) infinite alternate;
+}
+.aurora i:nth-child(3) {
+  width: 440px; height: 400px; left: 42%; top: 40%;
+  background: radial-gradient(circle at 50% 50%, rgba(76, 195, 138, .28), transparent 70%);
+  animation: drift3 27s var(--ease) infinite alternate;
+}
+@keyframes drift1 { to { transform: translate3d(90px, -60px, 0) scale(1.15); } }
+@keyframes drift2 { to { transform: translate3d(-110px, 70px, 0) scale(1.1); } }
+@keyframes drift3 { to { transform: translate3d(60px, 90px, 0) scale(.9); } }
+
+/* a soft light that follows the pointer across the hero */
+#spot {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 30%),
+              rgba(255, 255, 255, .06), transparent 62%);
+  opacity: 0; transition: opacity .6s var(--ease);
+}
+header:hover #spot { opacity: 1; }
+header > .wrap { z-index: 1; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-size: 13px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; margin-bottom: 26px;
+  background: rgba(26, 26, 29, .6);
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 0 0 rgba(76, 195, 138, .6);
+  animation: pulse 2.6s ease-out infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76, 195, 138, .55); }
+  70% { box-shadow: 0 0 0 9px rgba(76, 195, 138, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 195, 138, 0); }
+}
+
+h1 {
+  font-size: clamp(40px, 7.4vw, 66px); line-height: 1.02;
+  margin: 0 0 20px; letter-spacing: -0.035em; font-weight: 640;
+}
+h1 .w { display: inline-block; }
+.shine {
+  background: linear-gradient(92deg, var(--accent) 0%, var(--accent-2) 36%, var(--accent) 72%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: shine 7s linear infinite;
+}
+@keyframes shine { to { background-position: 260% 0; } }
+
+.lede { font-size: 21px; color: var(--muted); margin: 0 0 32px; max-width: 30em; }
 
 .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .btn {
+  position: relative; overflow: hidden;
   display: inline-block; text-decoration: none; font-size: 16px; font-weight: 550;
-  padding: 12px 22px; border-radius: 9px;
+  padding: 12px 22px; border-radius: 10px;
   background: var(--text); color: #16161a;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
-.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
+.btn:active { transform: translateY(0); }
+.btn.ghost {
+  background: transparent; color: var(--text); border: 1px solid var(--line);
+}
+.btn.ghost:hover { border-color: #3a3a42; background: rgba(255, 255, 255, .03); }
 
+/* ---------- the copyable command ---------- */
 .install {
-  margin: 28px 0 0; background: var(--panel); border: 1px solid var(--line);
-  border-radius: 10px; padding: 15px 18px; overflow-x: auto;
+  position: relative; margin: 26px 0 0;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 11px; padding: 14px 54px 14px 18px; overflow-x: auto;
+  transition: border-color .3s var(--ease);
 }
-.install code { color: var(--text); white-space: nowrap; }
-.install .c { color: var(--dim); }
-
-figure { margin: 56px 0; }
-figure img {
-  width: 100%; display: block; border-radius: 12px; border: 1px solid var(--line);
+.install:hover { border-color: #3a3a42; }
+.install code { white-space: pre; }
+.install .c { color: var(--dim); user-select: none; }
+.copy {
+  position: absolute; top: 8px; right: 8px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+  border-radius: 7px; font-size: 12px; padding: 5px 9px; cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
 }
-figcaption { color: var(--dim); font-size: 14px; margin-top: 12px; }
+.copy:hover { color: var(--text); border-color: #3a3a42; }
+.copy.done { color: var(--green); border-color: rgba(76, 195, 138, .5); }
 
-section { padding: 40px 0; border-top: 1px solid var(--line); }
-h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.09em;
-     color: var(--dim); font-weight: 600; margin: 0 0 22px; }
-h3 { font-size: 20px; margin: 32px 0 8px; }
-p { margin: 0 0 18px; color: var(--muted); }
-p strong { color: var(--text); font-weight: 550; }
+/* ---------- the app window that holds the demo ---------- */
+.shot { margin: 54px 0 0; }
+.frame {
+  border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: var(--bg-soft);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .02) inset;
+  transform: translateY(26px) scale(.985); opacity: 0;
+  transition: transform 1s var(--ease), opacity 1s var(--ease);
+}
+.frame.in { transform: translateY(0) scale(1); opacity: 1; }
+.bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #202024, #1a1a1e);
+}
+.bar span { width: 11px; height: 11px; border-radius: 50%; background: #3a3a42; }
+.bar span:nth-child(1) { background: #ff5f57; }
+.bar span:nth-child(2) { background: #febc2e; }
+.bar span:nth-child(3) { background: #28c840; }
+.bar .t { margin-left: 8px; font-size: 12px; color: var(--dim); }
+.frame img { display: block; width: 100%; }
+figcaption, .cap {
+  color: var(--dim); font-size: 14px; margin-top: 12px; text-align: center;
+}
 
-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
-th, td { text-align: left; padding: 11px 0; border-bottom: 1px solid var(--line);
-         font-size: 16px; color: var(--muted); vertical-align: top; }
-th { color: var(--dim); font-weight: 500; font-size: 13px;
-     text-transform: uppercase; letter-spacing: 0.06em; }
-td:first-child { color: var(--text); width: 38%; padding-right: 20px; }
+/* ---------- the strip of facts under the hero ---------- */
+.facts {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  margin: 64px 0 0; background: var(--line);
+  border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
+}
+.facts div { background: var(--bg-soft); padding: 22px 20px; }
+.facts b { display: block; font-size: 27px; letter-spacing: -0.02em; font-weight: 620; }
+.facts small { color: var(--dim); font-size: 13.5px; }
+@media (max-width: 620px) { .facts { grid-template-columns: 1fr; } }
 
-footer { padding: 48px 0 72px; border-top: 1px solid var(--line);
-         color: var(--dim); font-size: 15px; }
+/* ---------- sections ---------- */
+section { padding: 92px 0 0; }
+h2 {
+  font-size: 15px; text-transform: uppercase; letter-spacing: .13em;
+  color: var(--accent); margin: 0 0 26px; font-weight: 620;
+}
+h3 { font-size: 21px; margin: 0 0 8px; letter-spacing: -0.015em; }
+p { margin: 0 0 18px; }
+section p { color: #d3d3d8; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+.card {
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: 14px; padding: 24px 22px 26px;
+  transition: transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease);
+}
+.card:hover {
+  transform: translateY(-4px); border-color: #3a3a42; background: var(--panel);
+}
+.card p { font-size: 15.5px; color: var(--muted); margin: 0; }
+.ico {
+  width: 38px; height: 38px; border-radius: 10px; margin-bottom: 16px;
+  display: grid; place-items: center;
+  background: rgba(242, 139, 34, .12); border: 1px solid rgba(242, 139, 34, .22);
+}
+.ico svg { width: 19px; height: 19px; stroke: var(--accent); fill: none; stroke-width: 1.7; }
+.card:hover .ico svg { animation: nudge .6s var(--ease); }
+@keyframes nudge { 50% { transform: translateX(3px); } }
+
+/* ---------- the usage meters ---------- */
+.meters {
+  margin: 30px 0 0; background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: 14px; padding: 24px 22px;
+}
+.meter + .meter { margin-top: 20px; }
+.meter .top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 14.5px; margin-bottom: 9px;
+}
+.meter .who { color: var(--text); font-weight: 550; }
+.meter .pct { font-variant-numeric: tabular-nums; color: var(--muted); }
+.track {
+  height: 9px; border-radius: 999px; background: var(--panel-2); overflow: hidden;
+}
+.fill {
+  height: 100%; width: 0; border-radius: 999px;
+  transition: width 1.5s var(--ease);
+}
+.fill.hot { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.fill.cool { background: linear-gradient(90deg, #35a06e, var(--green)); }
+.meter .note { font-size: 13px; color: var(--dim); margin-top: 7px; }
+
+/* ---------- the swap diagram ---------- */
+.swap {
+  position: relative; margin: 30px 0 0;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: 14px; padding: 26px 22px 22px;
+}
+.rows { display: grid; gap: 76px; }
+.row {
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid var(--line); border-radius: 11px;
+  padding: 14px 16px; background: var(--panel);
+  transition: border-color .5s var(--ease), background .5s var(--ease);
+}
+.row.live { border-color: rgba(242, 139, 34, .45); background: rgba(242, 139, 34, .06); }
+.mark {
+  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  border: 2px solid var(--dim); transition: all .5s var(--ease);
+}
+.row.live .mark {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--bg-soft), inset 0 0 0 9px var(--accent);
+}
+.row .label { flex: 1; font-size: 15px; color: var(--muted); }
+.row.live .label { color: var(--text); }
+.row .state {
+  font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums;
+}
+.row.live .state { color: var(--accent); }
+
+.chips {
+  position: absolute; left: 0; right: 0; top: 50%; height: 0;
+  display: flex; justify-content: center; gap: 10px; pointer-events: none;
+}
+.chip {
+  transform: translateY(-50%);
+  font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid rgba(242, 139, 34, .4); background: #221a12; color: var(--accent-2);
+  border-radius: 999px; padding: 5px 11px; white-space: nowrap;
+  opacity: 0;
+}
+.swap.run .chip { animation: travel 5.2s var(--ease) infinite; }
+.swap.run .chip:nth-child(2) { animation-delay: .35s; }
+@keyframes travel {
+  0%   { opacity: 0; transform: translate(0, -48px) scale(.9); }
+  12%  { opacity: 1; transform: translate(0, -48px) scale(1); }
+  46%  { opacity: 1; transform: translate(0, 44px) scale(1); }
+  60%  { opacity: 0; transform: translate(0, 44px) scale(.9); }
+  100% { opacity: 0; transform: translate(0, -48px) scale(.9); }
+}
+.swap .steps {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px;
+  font-size: 13px; color: var(--dim);
+}
+.swap .steps span {
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+  transition: color .4s, border-color .4s, background .4s;
+}
+.swap .steps span.on {
+  color: var(--accent); border-color: rgba(242, 139, 34, .45);
+  background: rgba(242, 139, 34, .08);
+}
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; margin: 6px 0 18px; }
+th, td {
+  text-align: left; padding: 15px 2px; border-bottom: 1px solid var(--line);
+  vertical-align: top; font-size: 16px;
+}
+th { color: var(--dim); font-weight: 500; font-size: 13.5px; }
+td:first-child { width: 34%; color: var(--text); padding-right: 22px; }
+tr td:last-child { color: var(--muted); }
+@media (max-width: 620px) {
+  td:first-child { width: 42%; }
+}
+
+/* ---------- reveal on scroll ---------- */
+.js .reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .8s var(--ease), transform .8s var(--ease);
+}
+.js .reveal.in { opacity: 1; transform: none; }
+
+footer {
+  margin-top: 110px; padding: 34px 0 72px;
+  border-top: 1px solid var(--line); color: var(--dim); font-size: 14px;
+}
 footer a { color: var(--muted); }
+footer p { margin: 0 0 10px; }
 
-@media (max-width: 600px) {
-  header { padding: 56px 0 36px; }
-  h1 { font-size: 40px; }
-  .lede { font-size: 19px; }
-  td:first-child { width: 45%; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+  .js .reveal { opacity: 1; transform: none; }
+  .frame { opacity: 1; transform: none; }
 }
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div id="progress"></div>
+
+<nav>
+  <img src="icon.png" alt="">
+  <span class="name">Janus</span>
+  <span class="spacer"></span>
+  <a class="navlink" href="#what">What it does</a>
+  <a class="navlink" href="#how">How it works</a>
+  <a class="navlink" href="#trust">Before you trust it</a>
+  <a class="btn" href="#install">Install</a>
+</nav>
 
 <header>
-  <span class="badge">macOS 13+ &nbsp;·&nbsp; MIT &nbsp;·&nbsp; universal build</span>
-  <h1>Know which account<br>has room left.</h1>
-  <p class="lede">Janus switches between your Claude Code accounts from the menu
-  bar, and shows how much of each one's limits you have spent.</p>
+  <div class="aurora"><i></i><i></i><i></i></div>
+  <div id="spot"></div>
+  <div class="wrap">
+    <span class="badge"><span class="dot"></span> macOS 13+ &nbsp;·&nbsp; MIT &nbsp;·&nbsp; universal build</span>
+    <h1><span class="w">Know</span> <span class="w">which</span> <span class="w">account</span><br>
+        <span class="w shine">has room left.</span></h1>
+    <p class="lede reveal">Janus switches between your Claude Code accounts from the menu
+    bar, and shows how much of each one's limits you have spent.</p>
 
-  <div class="cta">
-    <a class="btn" href="https://github.com/RamitVishwakarma/Janus/releases/latest">Download</a>
-    <a class="btn ghost" href="https://github.com/RamitVishwakarma/Janus">Source on GitHub</a>
-  </div>
+    <div class="cta reveal">
+      <a class="btn" href="https://github.com/RamitVishwakarma/Janus/releases/latest">Download for macOS</a>
+      <a class="btn ghost" href="https://github.com/RamitVishwakarma/Janus">Source on GitHub</a>
+    </div>
 
-  <div class="install">
-    <code><span class="c">$</span> brew install --cask --no-quarantine ramitvishwakarma/tap/janus</code>
+    <div class="install reveal">
+      <code><span class="c">$ </span>brew install --cask --no-quarantine ramitvishwakarma/tap/janus</code>
+      <button class="copy" data-copy="brew install --cask --no-quarantine ramitvishwakarma/tap/janus">Copy</button>
+    </div>
+
+    <div class="shot">
+      <figure style="margin:0">
+        <div class="frame">
+          <img src="demo.gif" alt="Switching between two saved Claude Code accounts in the Janus window">
+        </div>
+        <figcaption>One click moves the live session, and the saved one is kept.</figcaption>
+      </figure>
+    </div>
+
+    <div class="facts reveal">
+      <div><b>2 files</b><small>An OAuth token and <code>~/.claude.json</code>. That pair is the whole session.</small></div>
+      <div><b>0 servers</b><small>No telemetry and no network code anywhere in the repository.</small></div>
+      <div><b>1 click</b><small>Or <kbd>⌘S</kbd> from the menu bar, without opening the window.</small></div>
+    </div>
   </div>
 </header>
 
-<figure>
-  <img src="demo.gif" alt="Switching between two saved Claude Code accounts in the Janus window">
-  <figcaption>One click moves the live session, and the saved one is kept.</figcaption>
-</figure>
+<div class="wrap">
 
-<section>
-  <h2>What it does</h2>
+<section id="what">
+  <h2 class="reveal">What it does</h2>
+  <div class="cards">
+    <div class="card reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 8h14l-3-3M21 16H7l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>Switches accounts</h3>
+      <p>Signing in as another account normally means signing out first and typing
+      the whole thing again. Janus saves each account's session and puts it back
+      on demand, so the second account is one click away instead of one login
+      away. <kbd>⌘S</kbd> moves through them in the order you choose.</p>
+    </div>
+    <div class="card reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-6M22 19H2" stroke-linecap="round"/></svg></div>
+      <h3>Shows what each has spent</h3>
+      <p>Every saved account carries its five-hour and weekly usage, read from
+      the file Claude Code writes. That is the number worth looking at when the
+      decision in front of you is which account to use next.</p>
+    </div>
+    <div class="card reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>Clears developer caches</h3>
+      <p>A measured list of package manager, build, browser and editor caches,
+      with what each one costs to lose. Everything moves to the Trash rather
+      than being deleted, so any decision can be taken back.</p>
+    </div>
+  </div>
 
-  <h3>Switches accounts</h3>
-  <p>Signing in as another account normally means signing out first and typing
-  the whole thing again. Janus saves each account's session and puts it back on
-  demand, so the second account is one click away instead of one login away.
-  <kbd>⌘S</kbd> from the menu bar moves through them in the order you choose.</p>
-
-  <h3>Shows what each account has spent</h3>
-  <p>Every saved account carries its five-hour and weekly usage, read from the
-  file Claude Code writes. That is the number worth looking at when the decision
-  in front of you is which account to use next.</p>
-
-  <h3>Clears developer caches</h3>
-  <p>A measured list of package manager, build, browser and editor caches, with
-  what each one costs to lose. Everything moves to the Trash rather than being
-  deleted, so any decision can be taken back.</p>
+  <div class="meters reveal">
+    <div class="meter">
+      <div class="top"><span class="who">Account one</span><span class="pct" data-count="94">0%</span></div>
+      <div class="track"><i class="fill hot" data-w="94"></i></div>
+      <div class="note">Five-hour limit, nearly gone.</div>
+    </div>
+    <div class="meter">
+      <div class="top"><span class="who">Account two</span><span class="pct" data-count="5">0%</span></div>
+      <div class="track"><i class="fill cool" data-w="5"></i></div>
+      <div class="note">Barely touched. This is the one to switch to.</div>
+    </div>
+  </div>
 </section>
 
-<section>
-  <h2>How switching works</h2>
-  <p>A signed-in Claude Code session is two things on disk.</p>
-  <table>
+<section id="how">
+  <h2 class="reveal">How switching works</h2>
+  <p class="reveal">A signed-in Claude Code session is two things on disk.</p>
+  <table class="reveal">
     <tr><th>Part</th><th>Where it lives</th></tr>
     <tr><td>OAuth tokens</td><td>Keychain entry <code>Claude Code-credentials</code></td></tr>
     <tr><td>Everything else</td><td><code>~/.claude.json</code></td></tr>
   </table>
-  <p>Switching moves that pair. Janus copies the live pair into storage under the
-  account it belongs to, then writes the other account's saved pair into place.
-  Claude Code reads credentials at startup, so restart it to pick up the new
-  account.</p>
+
+  <div class="swap reveal">
+    <div class="rows">
+      <div class="row live" id="rowA">
+        <span class="mark"></span>
+        <span class="label">Account one</span>
+        <span class="state">In use</span>
+      </div>
+      <div class="chips">
+        <span class="chip">Claude Code-credentials</span>
+        <span class="chip">~/.claude.json</span>
+      </div>
+      <div class="row" id="rowB">
+        <span class="mark"></span>
+        <span class="label">Account two</span>
+        <span class="state">Saved</span>
+      </div>
+    </div>
+    <div class="steps">
+      <span data-step="0">Read the replacement</span>
+      <span data-step="1">Save the live pair</span>
+      <span data-step="2">Write the new pair</span>
+      <span data-step="3">Restart Claude Code</span>
+    </div>
+  </div>
+
+  <p class="reveal">Switching moves that pair. Janus copies the live pair into
+  storage under the account it belongs to, then writes the other account's saved
+  pair into place. Claude Code reads credentials at startup, so restart it to
+  pick up the new account.</p>
 </section>
 
-<section>
-  <h2>Before you trust it</h2>
-  <table>
+<section id="trust">
+  <h2 class="reveal">Before you trust it</h2>
+  <table class="reveal">
     <tr>
       <td>Nothing leaves your Mac</td>
       <td>No server, no telemetry, and no network code in the repository.</td>
@@ -185,33 +544,153 @@ footer a { color: var(--muted); }
   </table>
 </section>
 
-<section>
-  <h2>Install</h2>
-  <div class="install">
-    <code><span class="c">$</span> brew install --cask --no-quarantine ramitvishwakarma/tap/janus</code>
+<section id="install">
+  <h2 class="reveal">Install</h2>
+  <div class="install reveal">
+    <code><span class="c">$ </span>brew install --cask --no-quarantine ramitvishwakarma/tap/janus</code>
+    <button class="copy" data-copy="brew install --cask --no-quarantine ramitvishwakarma/tap/janus">Copy</button>
   </div>
-  <p>Or download the <a href="https://github.com/RamitVishwakarma/Janus/releases/latest">latest
+  <p class="reveal">Or download the <a href="https://github.com/RamitVishwakarma/Janus/releases/latest">latest
   release</a> and drag Janus to Applications. I sign the build ad-hoc rather than
   with a paid Apple Developer certificate, so macOS puts a quarantine flag on it
   and refuses to open it the first time. Clear the flag once:</p>
-  <div class="install">
-    <code><span class="c">$</span> xattr -dr com.apple.quarantine /Applications/Janus.app</code>
+  <div class="install reveal">
+    <code><span class="c">$ </span>xattr -dr com.apple.quarantine /Applications/Janus.app</code>
+    <button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/Janus.app">Copy</button>
   </div>
-  <p>Or build it yourself. It needs the Xcode Command Line Tools, not Xcode.</p>
-  <div class="install">
-    <code><span class="c">$</span> git clone https://github.com/RamitVishwakarma/Janus.git &amp;&amp; cd Janus &amp;&amp; ./build.sh</code>
+  <p class="reveal">Or build it yourself. It needs the Xcode Command Line Tools,
+  not Xcode.</p>
+  <div class="install reveal">
+    <code><span class="c">$ </span>git clone https://github.com/RamitVishwakarma/Janus.git
+<span class="c">$ </span>cd Janus &amp;&amp; ./build.sh</code>
+    <button class="copy" data-copy="git clone https://github.com/RamitVishwakarma/Janus.git
+cd Janus && ./build.sh">Copy</button>
   </div>
 </section>
 
 <footer>
   <p><a href="https://github.com/RamitVishwakarma/Janus">GitHub</a> &nbsp;·&nbsp;
   <a href="https://github.com/RamitVishwakarma/Janus/issues">Issues</a> &nbsp;·&nbsp;
+  <a href="https://github.com/RamitVishwakarma/Janus/discussions">Discussions</a> &nbsp;·&nbsp;
   <a href="https://github.com/RamitVishwakarma/Janus/blob/main/LICENSE">MIT</a></p>
+  <p>This page loads no fonts, scripts or images from anywhere else, which felt
+  like the least a page about an app with no network code could do.</p>
   <p>Janus is not affiliated with, endorsed by, or supported by Anthropic. It
   reads and writes files and keychain entries belonging to Claude Code, which is
   a product of Anthropic.</p>
 </footer>
 
 </div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Headline words rise in turn. */
+  if (!reduce) {
+    var words = document.querySelectorAll("h1 .w");
+    words.forEach(function (w, i) {
+      w.style.opacity = 0;
+      w.style.transform = "translateY(20px)";
+      w.style.transition = "opacity .7s cubic-bezier(.22,1,.36,1) " + (i * 90 + 80) +
+                           "ms, transform .7s cubic-bezier(.22,1,.36,1) " + (i * 90 + 80) + "ms";
+      requestAnimationFrame(function () {
+        w.style.opacity = 1;
+        w.style.transform = "none";
+      });
+    });
+  }
+
+  /* Anything marked reveal fades up once, when it first comes into view. */
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("in");
+      io.unobserve(e.target);
+      if (e.target.classList.contains("meters")) fillMeters(e.target);
+      if (e.target.classList.contains("swap")) startSwap(e.target);
+    });
+  }, { threshold: 0.18, rootMargin: "0px 0px -40px 0px" });
+
+  document.querySelectorAll(".reveal, .frame").forEach(function (el, i) {
+    el.style.transitionDelay = (i % 4) * 70 + "ms";
+    io.observe(el);
+  });
+
+  /* Usage bars grow to their figure while the number counts up to match. */
+  function fillMeters(root) {
+    root.querySelectorAll(".fill").forEach(function (f) {
+      setTimeout(function () { f.style.width = f.dataset.w + "%"; }, 120);
+    });
+    root.querySelectorAll("[data-count]").forEach(function (el) {
+      var target = parseInt(el.dataset.count, 10);
+      if (reduce) { el.textContent = target + "%"; return; }
+      var started = null;
+      function step(now) {
+        if (started === null) started = now;
+        var p = Math.min((now - started) / 1400, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + "%";
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* The two rows trade places on a loop, the way a real switch moves them. */
+  function startSwap(root) {
+    if (reduce) return;
+    root.classList.add("run");
+    var a = root.querySelector("#rowA");
+    var b = root.querySelector("#rowB");
+    var steps = root.querySelectorAll(".steps span");
+    var i = 0;
+    setInterval(function () {
+      steps.forEach(function (s, n) { s.classList.toggle("on", n === i % 4); });
+      if (i % 4 === 2) {
+        var aLive = a.classList.contains("live");
+        a.classList.toggle("live", !aLive);
+        b.classList.toggle("live", aLive);
+        a.querySelector(".state").textContent = aLive ? "Saved" : "In use";
+        b.querySelector(".state").textContent = aLive ? "In use" : "Saved";
+      }
+      i++;
+    }, 1300);
+  }
+
+  /* The nav arrives once the hero has scrolled away. */
+  var nav = document.querySelector("nav");
+  var bar = document.getElementById("progress");
+  function onScroll() {
+    var y = window.scrollY;
+    nav.classList.toggle("up", y > 420);
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.transform = "scaleX(" + (h > 0 ? y / h : 0) + ")";
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  /* A soft light follows the pointer across the hero. */
+  var head = document.querySelector("header");
+  if (!reduce) {
+    head.addEventListener("pointermove", function (e) {
+      var r = head.getBoundingClientRect();
+      head.style.setProperty("--mx", (e.clientX - r.left) + "px");
+      head.style.setProperty("--my", (e.clientY - r.top) + "px");
+    });
+  }
+
+  /* Copy buttons. */
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      navigator.clipboard.writeText(b.dataset.copy).then(function () {
+        b.textContent = "Copied";
+        b.classList.add("done");
+        setTimeout(function () { b.textContent = "Copy"; b.classList.remove("done"); }, 1600);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>
