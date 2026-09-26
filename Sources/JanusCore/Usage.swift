@@ -17,6 +17,18 @@ public struct Usage: Equatable {
             self.percentUsed = percentUsed
             self.resetsAt = resetsAt
         }
+
+        /// True once the reset moment has gone by, which makes `percentUsed` the
+        /// spend of a window that has already ended.
+        ///
+        /// Claude Code measures only while a session is running, so the figure it
+        /// last wrote sits here unchanged across the reset. Reading it as the
+        /// current one is how a limit that has actually started over comes to look
+        /// like a limit that is still full.
+        public func hasReset(by now: Date = Date()) -> Bool {
+            guard let resetsAt else { return false }
+            return resetsAt <= now
+        }
     }
 
     /// Which products the weekly spend went to, e.g. ("Claude Code", 98).
@@ -36,6 +48,19 @@ public struct Usage: Equatable {
     public var measuredAt: Date?
 
     public var isEmpty: Bool { fiveHour == nil && sevenDay == nil }
+
+    /// The limits that have started over since these figures were taken, named the
+    /// way they are labelled on screen.
+    ///
+    /// Named rather than counted because the answer is only useful with the remedy
+    /// attached, and the remedy is worth saying out loud: nothing moves here until
+    /// Claude Code runs again.
+    public func resetWindows(by now: Date = Date()) -> [String] {
+        var names: [String] = []
+        if fiveHour?.hasReset(by: now) == true { names.append("5-hour") }
+        if sevenDay?.hasReset(by: now) == true { names.append("7-day") }
+        return names
+    }
 
     public init(fiveHour: Window? = nil,
                 sevenDay: Window? = nil,
@@ -97,8 +122,13 @@ public enum Elapsed {
     public static func until(_ date: Date?, now: Date = Date()) -> String? {
         guard let date else { return nil }
         let seconds = date.timeIntervalSince(now)
-        guard seconds > 0 else { return "resetting now" }
-        return "resets in " + spell(seconds)
+        if seconds > 0 { return "resets in " + spell(seconds) }
+
+        // Past the reset the phrase has to keep moving, or a limit that turned
+        // over yesterday reads the same as one turning over this second, and
+        // "resetting now" that never stops is indistinguishable from a stuck app.
+        guard seconds < -60 else { return "resetting now" }
+        return "last reset " + spell(-seconds) + " ago"
     }
 
     public static func since(_ date: Date?, now: Date = Date()) -> String? {

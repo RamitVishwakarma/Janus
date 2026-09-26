@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import JanusCore
@@ -54,6 +55,11 @@ final class AccountsModel: ObservableObject {
     // MARK: - Reading
 
     func reload() {
+        // Claude Code writes fresh figures into the live settings file as it
+        // goes. Folding them into the signed-in account's saved copy here is what
+        // stops those figures being lost the moment it is switched away from.
+        switcher.captureLiveUsage()
+
         roster = (try? switcher.roster()) ?? Roster()
         signedInEmail = switcher.liveSettings()?.email
 
@@ -69,6 +75,54 @@ final class AccountsModel: ObservableObject {
 
         self.restorable = restorable
         self.usage = readings
+    }
+
+    /// The Refresh button.
+    ///
+    /// Says what it did, because a refresh that changes nothing on screen and a
+    /// refresh that did nothing look identical otherwise — and only one account's
+    /// figures can ever move, which is worth saying out loud rather than leaving
+    /// people to press the button again.
+    func refresh() {
+        guard !isWorking else { return }
+        reload()
+
+        let others = profiles.filter { !isActive($0) }
+        var notes: [String] = []
+
+        if let active, let reading = usage[active.id] {
+            let reset = reading.resetWindows()
+            if reset.isEmpty {
+                notes.append("\(active.email) is up to date.")
+            } else {
+                // The one case where pressing Refresh again will never help:
+                // Claude Code measures while a session runs, and no session has
+                // run since the window turned over, so there is nothing to read.
+                notes.append("""
+                             The \(Self.list(reset)) \(reset.count == 1 ? "limit has" : "limits have") \
+                             started over since Claude Code last measured \(active.email). Start a \
+                             Claude Code session and the new figure appears here.
+                             """)
+            }
+        } else if let active {
+            notes.append("Claude Code has not recorded any usage for \(active.email) yet.")
+        }
+        if !others.isEmpty {
+            notes.append("""
+                         The other \(others.count == 1 ? "account keeps the figures" : "accounts keep the figures") \
+                         from when \(others.count == 1 ? "it was" : "they were") last signed in. Claude Code only \
+                         measures the account signed in now, so Janus has nothing newer to read.
+                         """)
+        }
+
+        failure = nil
+        outcome = Outcome("Refreshed.", notes: notes)
+    }
+
+    /// "5-hour and 7-day", rather than a comma-separated list of two.
+    private static func list(_ names: [String]) -> String {
+        guard let last = names.last, names.count > 1 else { return names.first ?? "" }
+        return names.dropLast().joined(separator: ", ") + " and " + last
     }
 
     // MARK: - Acting
@@ -115,8 +169,21 @@ final class AccountsModel: ObservableObject {
         outcome = nil
         failure = nil
 
+        // macOS draws a keychain prompt in front of the app that asked for it, so
+        // an app still in the background gets one nobody can see, and every button
+        // stays disabled behind it. Coming forward first is what keeps a switch
+        // waiting on a prompt from looking like a switch that has hung.
+        NSApp.activate(ignoringOtherApps: true)
+
         let switcher = switcher
         Task {
+            // The flag disables the whole interface, so it has to come back down
+            // on every path out of here, cancellation included.
+            defer {
+                isWorking = false
+                reload()
+            }
+
             let result = await Task.detached { () -> Result<Outcome?, Error> in
                 do { return .success(try work(switcher)) } catch { return .failure(error) }
             }.value
@@ -125,9 +192,6 @@ final class AccountsModel: ObservableObject {
             case .success(let value): outcome = value
             case .failure(let error): failure = error.localizedDescription
             }
-
-            isWorking = false
-            reload()
         }
     }
 }

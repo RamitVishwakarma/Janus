@@ -44,7 +44,7 @@ struct MenuBarContent: View {
         Button("Open Janus…") { reveal() }
             .keyboardShortcut("o")
         Button("Refresh") {
-            accounts.reload()
+            accounts.refresh()
             caches.scan()
         }
         Button("Quit Janus") { NSApplication.shared.terminate(nil) }

@@ -83,6 +83,19 @@ public final class Vault: Sendable {
         fileManager.contents(atPath: settingsURL(for: id).path)
     }
 
+    /// Replaces the settings half of a saved session and leaves the tokens alone.
+    ///
+    /// Touches no secrets, which is what makes it something a refresh can do: an
+    /// account's recorded figures can be brought up to date without a keychain
+    /// prompt. A slot that does not exist yet is left alone rather than created,
+    /// since settings without credentials is not a session anything can restore.
+    public func refreshStoredSettings(_ settings: Data, for id: UUID) throws {
+        let destination = settingsURL(for: id)
+        guard fileManager.fileExists(atPath: destination.path) else { return }
+        try settings.write(to: destination, options: .atomic)
+        restrict(destination)
+    }
+
     public func session(for id: UUID) throws -> StoredSession {
         let settings = settingsURL(for: id)
         guard let contents = fileManager.contents(atPath: settings.path) else {

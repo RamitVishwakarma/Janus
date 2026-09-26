@@ -93,6 +93,71 @@ final class SwitcherTests: XCTestCase {
         XCTAssertTrue(outcome.notes.contains { $0.contains("stranger@example.com") })
     }
 
+    func testARefusedKeychainStopsTheSwitchRatherThanLoseTheSession() throws {
+        let sandbox = try Sandbox()
+        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.switcher.adoptCurrentAccount()
+        try sandbox.signIn(email: "second@example.com", token: "second-token")
+        try sandbox.switcher.adoptCurrentAccount()
+
+        let first = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "first@example.com"))
+        let second = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "second@example.com"))
+        try sandbox.switcher.activate(first.id)
+
+        // Claude Code rotates the live tokens while the account is in use, so the
+        // keychain now holds the only copy that still works.
+        try sandbox.secrets.write(Data("rotated-token".utf8), to: sandbox.session.credentials)
+        sandbox.refuseLiveKeychain()
+
+        XCTAssertThrowsError(try sandbox.switcher.activate(second.id),
+                             "a keychain that will not give up the live tokens must stop the switch")
+
+        // Carrying on would have written second@ over the only copy of the
+        // rotated tokens, leaving first@ needing a fresh sign-in.
+        sandbox.allowLiveKeychain()
+        XCTAssertEqual(sandbox.liveEmail, "first@example.com")
+        XCTAssertEqual(sandbox.liveToken, "rotated-token")
+    }
+
+    func testSwitchingAwayFromAnAccountWhoseTokensAreAlreadyGoneIsAllowed() throws {
+        let sandbox = try Sandbox()
+        try sandbox.signIn(email: "saved@example.com", token: "saved-token")
+        try sandbox.switcher.adoptCurrentAccount()
+
+        // Settings still name an account, but its tokens have been signed out
+        // from under them. There is no session here left to lose.
+        try sandbox.settings(email: "stale@example.com").write(to: sandbox.session.settingsURL)
+        try sandbox.secrets.remove(sandbox.session.credentials)
+
+        let saved = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "saved@example.com"))
+        XCTAssertNoThrow(try sandbox.switcher.activate(saved.id))
+        XCTAssertEqual(sandbox.liveEmail, "saved@example.com")
+    }
+
+    func testCapturingLiveUsageBringsTheSavedCopyUpToDate() throws {
+        let sandbox = try Sandbox()
+        try sandbox.signIn(email: "busy@example.com", usagePercent: 10)
+        try sandbox.switcher.adoptCurrentAccount()
+
+        let profile = try XCTUnwrap(sandbox.switcher.roster().profiles.first)
+        XCTAssertEqual(sandbox.switcher.usage(for: profile, isActive: false)?.fiveHour?.percentUsed, 10)
+
+        // Claude Code measures more while the account stays signed in.
+        try sandbox.settings(email: "busy@example.com", usagePercent: 90)
+            .write(to: sandbox.session.settingsURL)
+
+        XCTAssertEqual(sandbox.switcher.captureLiveUsage(), profile.id)
+        XCTAssertEqual(sandbox.switcher.usage(for: profile, isActive: false)?.fiveHour?.percentUsed, 90)
+        XCTAssertEqual(sandbox.liveToken, "token", "refreshing figures must not touch the tokens")
+    }
+
+    func testCapturingLiveUsageIgnoresAnAccountWithNoSavedSlot() throws {
+        let sandbox = try Sandbox()
+        try sandbox.signIn(email: "unmanaged@example.com", usagePercent: 50)
+        XCTAssertNil(sandbox.switcher.captureLiveUsage())
+        XCTAssertTrue(try sandbox.switcher.roster().profiles.isEmpty)
+    }
+
     func testSwitchingToTheActiveAccountIsRefused() throws {
         let sandbox = try Sandbox()
         try sandbox.signIn(email: "only@example.com")

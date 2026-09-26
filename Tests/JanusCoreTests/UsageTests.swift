@@ -68,6 +68,42 @@ final class UsageTests: XCTestCase {
         XCTAssertNil(Elapsed.until(nil))
     }
 
+    func testAResetThatHasBeenAndGoneStopsSayingItIsHappeningNow() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertEqual(Elapsed.until(now.addingTimeInterval(-90), now: now), "last reset 1m ago")
+        XCTAssertEqual(Elapsed.until(now.addingTimeInterval(-17 * 3600 - 120), now: now),
+                       "last reset 17h 2m ago")
+    }
+
+    func testAWindowKnowsWhenItsFigureBelongsToAnEndedWindow() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let spent = Usage.Window(percentUsed: 100, resetsAt: now.addingTimeInterval(-3600))
+        let running = Usage.Window(percentUsed: 49, resetsAt: now.addingTimeInterval(3600))
+        let undated = Usage.Window(percentUsed: 12, resetsAt: nil)
+
+        XCTAssertTrue(spent.hasReset(by: now))
+        XCTAssertFalse(running.hasReset(by: now))
+        XCTAssertFalse(undated.hasReset(by: now),
+                       "a window with no reset time has no reset to have passed")
+    }
+
+    func testOnlyTheWindowsThatTurnedOverAreNamed() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let usage = Usage(fiveHour: Usage.Window(percentUsed: 100,
+                                                 resetsAt: now.addingTimeInterval(-3600)),
+                          sevenDay: Usage.Window(percentUsed: 49,
+                                                 resetsAt: now.addingTimeInterval(86400)))
+
+        XCTAssertEqual(usage.resetWindows(by: now), ["5-hour"],
+                       "the weekly figure is still the one in force and must be left alone")
+
+        let both = Usage(fiveHour: usage.fiveHour,
+                         sevenDay: Usage.Window(percentUsed: 49,
+                                                resetsAt: now.addingTimeInterval(-60)))
+        XCTAssertEqual(both.resetWindows(by: now), ["5-hour", "7-day"])
+        XCTAssertEqual(Usage().resetWindows(by: now), [])
+    }
+
     func testAgesReadAsDurations() {
         let now = Date(timeIntervalSince1970: 1_000_000)
         XCTAssertEqual(Elapsed.since(now.addingTimeInterval(-30), now: now), "just now")

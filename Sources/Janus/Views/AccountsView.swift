@@ -115,7 +115,8 @@ struct AccountsView: View {
 
                 Spacer(minLength: 8)
 
-                Button("Refresh") { model.reload() }
+                Button("Refresh") { model.refresh() }
+                    .disabled(model.isWorking)
             }
 
             Message(outcome: model.outcome, failure: model.failure)
@@ -133,6 +134,23 @@ struct AccountsView: View {
                  To add a second one: sign out of Claude Code, sign in as the other \
                  account, then come back and press Save current account. From then on \
                  both are one click apart.
+                 """)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider().padding(.vertical, 2)
+
+            Text("Where the usage figures come from").font(.headline)
+            Text("""
+                 Claude Code asks Anthropic for your limits while a session is \
+                 running and writes the answer into its own settings file. Janus \
+                 reads that file and nothing else: it makes no network requests, so \
+                 it can only show what the last session measured.
+
+                 That is why a limit which has passed its reset shows a dash. The \
+                 old figure belongs to a window that has ended, and the new one does \
+                 not exist until a session runs and measures it.
                  """)
                 .font(.callout)
                 .foregroundStyle(.secondary)

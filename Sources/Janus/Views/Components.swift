@@ -61,9 +61,16 @@ struct Message: View {
 }
 
 /// One limit, drawn as a bar. The colour is the warning, not decoration.
+///
+/// A window whose reset has gone by is drawn empty with a dash in place of the
+/// percentage. The last figure is not the current one and there is no honest way
+/// to guess what replaced it, so the bar says nothing rather than saying the old
+/// number again.
 struct LimitBar: View {
     let caption: String
     let window: Usage.Window
+
+    private var hasReset: Bool { window.hasReset() }
 
     private var tint: Color {
         switch window.percentUsed {
@@ -83,17 +90,19 @@ struct LimitBar: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.secondary.opacity(0.18))
-                    Capsule()
-                        .fill(tint)
-                        .frame(width: max(2, geometry.size.width
-                                             * Double(min(window.percentUsed, 100)) / 100))
+                    if !hasReset {
+                        Capsule()
+                            .fill(tint)
+                            .frame(width: max(2, geometry.size.width
+                                                 * Double(min(window.percentUsed, 100)) / 100))
+                    }
                 }
             }
             .frame(width: 88, height: 5)
 
-            Text("\(window.percentUsed)%")
+            Text(hasReset ? "—" : "\(window.percentUsed)%")
                 .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(hasReset ? .tertiary : .secondary)
                 .frame(width: 34, alignment: .leading)
 
             if let resets = Elapsed.until(window.resetsAt) {
@@ -126,14 +135,38 @@ struct UsagePanel: View {
             }
             .font(.caption2)
             .foregroundStyle(.tertiary)
+
+            if let advice {
+                Text(advice)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
     private var freshness: String {
-        if isLive { return "current" }
+        if isLive {
+            // "current" stops being true the moment a window turns over: the file
+            // is still the latest one Claude Code wrote, and that is now old news.
+            guard !usage.resetWindows().isEmpty,
+                  let measured = Elapsed.since(usage.measuredAt)
+            else { return "current" }
+            return "measured \(measured)"
+        }
         if let measured = Elapsed.since(usage.measuredAt) {
             return "measured \(measured), when last signed in"
         }
         return "from the last saved session"
+    }
+
+    /// What to do about a figure that has stopped moving.
+    ///
+    /// Only offered for the signed-in account, because it is the only one a
+    /// session can be started for without switching first — and a saved account's
+    /// line already says its numbers are frozen at its last sign-in.
+    private var advice: String? {
+        guard isLive, !usage.resetWindows().isEmpty else { return nil }
+        return "Start a Claude Code session to measure the new window."
     }
 }

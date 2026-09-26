@@ -16,7 +16,10 @@ public struct SecretAddress: Hashable, Sendable {
 public enum SecretError: LocalizedError, Equatable {
     case notFound(SecretAddress)
     case accessDenied(SecretAddress)
-    case unexpected(SecretAddress, OSStatus)
+    /// The `security` tool came back with a status nothing here knows how to
+    /// phrase. The number is its exit code, which is the low byte of the
+    /// OSStatus underneath.
+    case unexpected(SecretAddress, Int32)
 
     public var errorDescription: String? {
         switch self {
@@ -25,8 +28,7 @@ public enum SecretError: LocalizedError, Equatable {
         case .accessDenied(let address):
             return "macOS refused access to the keychain entry for '\(address.service)'."
         case .unexpected(let address, let status):
-            let detail = SecCopyErrorMessageString(status, nil) as String? ?? "code \(status)"
-            return "Keychain error on '\(address.service)': \(detail)"
+            return "The keychain would not give up '\(address.service)' (error \(status))."
         }
     }
 }
@@ -42,87 +44,167 @@ public protocol SecretStore: AnyObject, Sendable {
     func contains(_ address: SecretAddress) -> Bool
 }
 
-/// The login keychain, reached through the Security framework.
+/// The login keychain, reached by running `/usr/bin/security` rather than by
+/// calling the Security framework directly.
+///
+/// Going the long way round is the entire point, and it is the fix for the
+/// password prompts.
+///
+/// Since macOS Sierra every keychain entry carries a partition list naming the
+/// code allowed to open it without asking, and macOS fills that list in with the
+/// code signature of whichever program created the entry. An entry Janus creates
+/// is therefore partitioned to Janus alone — which locks Claude Code out of its
+/// own tokens, because Claude Code reaches them by running `security`, and puts
+/// a login-password prompt in front of it every single time. An entry `security`
+/// creates is partitioned to `apple-tool:` instead, which is exactly what Claude
+/// Code writes for itself and what everything on the Mac already expects.
+///
+/// It cuts the other way too. A trusted-application entry is matched on code
+/// signature, and Janus is signed ad-hoc, so its signature changes with every
+/// build. Reading directly would mean a fresh prompt after every update, for
+/// every account. Read through `security` and the identity being checked is
+/// always the same one, whatever Janus happens to be today.
 public final class SystemKeychain: SecretStore {
+
+    static let tool = "/usr/bin/security"
 
     public init() {}
 
-    private func baseQuery(_ address: SecretAddress) -> [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: address.service,
-            kSecAttrAccount as String: address.account
-        ]
-    }
-
     public func read(_ address: SecretAddress) throws -> Data {
-        var query = baseQuery(address)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        switch status {
-        case errSecSuccess:
-            guard let data = result as? Data else { throw SecretError.unexpected(address, status) }
-            return data
-        case errSecItemNotFound:
-            throw SecretError.notFound(address)
-        case errSecUserCanceled, errSecAuthFailed, errSecInteractionNotAllowed:
-            throw SecretError.accessDenied(address)
-        default:
-            throw SecretError.unexpected(address, status)
-        }
+        let result = try run(["find-generic-password", "-w",
+                              "-s", address.service, "-a", address.account], at: address)
+        return Self.decode(result.output)
     }
 
+    /// Replaces the entry, and in doing so puts its partition list back to the
+    /// one Claude Code expects.
+    ///
+    /// Deleted and written again rather than updated, because an update leaves
+    /// the partition list alone, and an entry an older build of Janus created
+    /// under its own signature is precisely the thing that needs mending.
+    /// Deleting requires no permission of its own, so it cannot raise a prompt.
     public func write(_ payload: Data, to address: SecretAddress) throws {
-        let query = baseQuery(address)
-        let status = SecItemUpdate(query as CFDictionary,
-                                   [kSecValueData as String: payload] as CFDictionary)
+        try remove(address)
 
-        switch status {
-        case errSecSuccess:
-            return
-        case errSecItemNotFound:
-            var insert = query
-            insert[kSecValueData as String] = payload
-            let added = SecItemAdd(insert as CFDictionary, nil)
-            guard added == errSecSuccess else { throw SecretError.unexpected(address, added) }
-        case errSecUserCanceled, errSecAuthFailed, errSecInteractionNotAllowed:
-            throw SecretError.accessDenied(address)
-        default:
-            throw SecretError.unexpected(address, status)
-        }
+        // Hex on the command line, which is not the way anyone would choose to
+        // pass a token. `security` will read one from standard input instead,
+        // but it stops at 128 bytes, and a Claude Code session is four times
+        // that, so the choice is between this and a silently truncated token.
+        // It is also what Claude Code does to write the entry in the first
+        // place. `ps` shows a process's arguments to other processes belonging
+        // to the same user and to root, and to nobody else, for as long as the
+        // one-shot `security` call lives.
+        try run(["add-generic-password",
+                 "-a", address.account,
+                 "-s", address.service,
+                 "-l", address.service,
+                 "-X", Self.hex(payload)],
+                at: address)
     }
 
     public func remove(_ address: SecretAddress) throws {
-        let status = SecItemDelete(baseQuery(address) as CFDictionary)
-        // Deleting something that is already gone is the outcome the caller wanted.
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw SecretError.unexpected(address, status)
+        do {
+            try run(["delete-generic-password", "-s", address.service, "-a", address.account],
+                    at: address)
+        } catch SecretError.notFound {
+            // Deleting something already gone is the outcome the caller wanted.
         }
     }
 
-    /// Asks only whether the entry exists. Deliberately does not request the
-    /// payload, so checking never raises a keychain permission prompt.
+    /// Asks only whether the entry exists.
+    ///
+    /// The one operation still made through the framework: it never asks for the
+    /// payload, so it cannot raise a prompt whoever is asking, and the interface
+    /// does it for every account on every refresh.
     public func contains(_ address: SecretAddress) -> Bool {
-        var query = baseQuery(address)
-        query[kSecReturnAttributes as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: address.service,
+            kSecAttrAccount as String: address.account,
+            kSecReturnAttributes as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
         return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+    }
+
+    // MARK: - Running the tool
+
+    @discardableResult
+    private func run(_ arguments: [String], at address: SecretAddress) throws -> Command.Result {
+        guard let result = try? Command.run(Self.tool, arguments) else {
+            throw SecretError.unexpected(address, -1)
+        }
+        guard result.succeeded else { throw Self.error(forExit: result.status, at: address) }
+        return result
+    }
+
+    /// `security` exits with the low byte of the OSStatus it failed on, so the
+    /// codes worth naming are the ones those statuses reduce to.
+    static func error(forExit status: Int32, at address: SecretAddress) -> SecretError {
+        switch status {
+        case 44:            return .notFound(address)         // errSecItemNotFound
+        case 36, 51, 128:   return .accessDenied(address)     // no interaction, auth failed, cancelled
+        default:            return .unexpected(address, status)
+        }
+    }
+
+    // MARK: - Payloads
+
+    /// `security -w` prints the payload verbatim when every byte of it is
+    /// printable ASCII, and as lowercase hex when any byte is not.
+    ///
+    /// The two are told apart by looking, which is safe for what Janus stores:
+    /// the JSON blob Claude Code keeps its tokens in always carries braces and
+    /// quotes, so a line of nothing but hex digits can only be the encoded form.
+    static func decode(_ output: String) -> Data {
+        let text = output.hasSuffix("\n") ? String(output.dropLast()) : output
+        let hexDigits = Set("0123456789abcdef")
+
+        guard !text.isEmpty, text.count.isMultiple(of: 2), text.allSatisfy(hexDigits.contains)
+        else { return Data(text.utf8) }
+
+        var bytes = Data()
+        var index = text.startIndex
+        while index < text.endIndex {
+            let next = text.index(index, offsetBy: 2)
+            guard let byte = UInt8(text[index..<next], radix: 16) else { return Data(text.utf8) }
+            bytes.append(byte)
+            index = next
+        }
+        return bytes
+    }
+
+    static func hex(_ payload: Data) -> String {
+        payload.map { String(format: "%02x", $0) }.joined()
     }
 }
 
 /// An in-memory stand-in, used by the test suite.
 public final class MemorySecretStore: SecretStore, @unchecked Sendable {
     private var entries: [SecretAddress: Data] = [:]
+    private var refused: Set<SecretAddress> = []
     private let lock = NSLock()
 
     public init(seed: [SecretAddress: Data] = [:]) { entries = seed }
 
+    /// Makes reading an address fail the way macOS does when its prompt is
+    /// declined. Writing still works, which is not a contrivance: an entry is
+    /// replaced by deleting and adding it, and neither step needs permission to
+    /// read what was there.
+    public func refuseReads(of address: SecretAddress) {
+        lock.lock(); defer { lock.unlock() }
+        refused.insert(address)
+    }
+
+    /// Lets reads through again, so a test can look at what survived a refusal.
+    public func allowReads(of address: SecretAddress) {
+        lock.lock(); defer { lock.unlock() }
+        refused.remove(address)
+    }
+
     public func read(_ address: SecretAddress) throws -> Data {
         lock.lock(); defer { lock.unlock() }
+        if refused.contains(address) { throw SecretError.accessDenied(address) }
         guard let payload = entries[address] else { throw SecretError.notFound(address) }
         return payload
     }

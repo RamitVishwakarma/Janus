@@ -84,6 +84,28 @@ public final class Switcher: Sendable {
 
     // MARK: - Writing
 
+    /// Copies the signed-in account's settings into its saved slot, so the
+    /// figures Janus shows for it keep up with what Claude Code has measured.
+    ///
+    /// One file copy and no keychain access, which is what makes it cheap enough
+    /// to do on every refresh. It is also the only account whose figures can
+    /// move: the others are files Claude Code is not writing to, and Janus has no
+    /// way to ask for their numbers without signing them in first.
+    ///
+    /// - Returns: the account brought up to date, if there was one.
+    @discardableResult
+    public func captureLiveUsage() -> UUID? {
+        guard let settings = liveSettings(),
+              let email = settings.email,
+              let roster = try? vault.loadRoster(),
+              let owner = roster.profile(withEmail: email),
+              vault.hasSession(for: owner.id)
+        else { return nil }
+
+        try? vault.refreshStoredSettings(settings.raw, for: owner.id)
+        return owner.id
+    }
+
     /// Saves the signed-in account, adding it to the roster if it is new.
     @discardableResult
     public func adoptCurrentAccount() throws -> Outcome {
@@ -139,6 +161,13 @@ public final class Switcher: Sendable {
         }
 
         try install(replacement)
+
+        // Written back now that the live session is safely in place. Entries an
+        // older build left behind are partitioned to a code signature that no
+        // longer exists, and every switch would otherwise stop to ask for the
+        // login password; storing them again mends that for good. Nothing is at
+        // risk if it fails, because the tokens are already live.
+        try? vault.store(replacement, for: target.id)
 
         stamp(&roster, active: target.id)
         try vault.save(roster)
@@ -203,11 +232,25 @@ public final class Switcher: Sendable {
     ///
     /// An account that is signed in but unmanaged gets added rather than skipped:
     /// the alternative is overwriting credentials that exist nowhere else.
+    ///
+    /// The only reason to carry on without saving is that there is genuinely
+    /// nothing signed in. A keychain that refuses to hand the tokens over is a
+    /// different thing entirely, and has to stop the switch: carrying on would
+    /// overwrite a live session whose only copy is the one being refused, and
+    /// leave the account it belonged to needing a fresh sign-in.
     func preserveCurrentSession(in roster: inout Roster) throws -> Preserved {
-        guard let settings = liveSettings(),
-              let email = settings.email,
-              let credentials = try? secrets.read(session.credentials)
-        else { return .nothingSignedIn }
+        guard let settings = liveSettings(), let email = settings.email else {
+            return .nothingSignedIn
+        }
+
+        let credentials: Data
+        do {
+            credentials = try secrets.read(session.credentials)
+        } catch SecretError.notFound {
+            // Settings name an account but the tokens are gone, so there is no
+            // session here to lose.
+            return .nothingSignedIn
+        }
 
         let live = StoredSession(credentials: credentials, settings: settings.raw)
 

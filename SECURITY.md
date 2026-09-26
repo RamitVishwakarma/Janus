@@ -24,6 +24,18 @@ Useful context for anyone assessing a report. The app:
 - **Reads and writes the keychain entry `Claude Code-credentials`**, which holds
   the OAuth tokens for the signed-in Claude Code account. This is the entry being
   swapped, and is the whole point of the app.
+- **Reaches every keychain entry by running `/usr/bin/security`** rather than by
+  calling the Security framework directly. Entries carry a partition list naming
+  the code that may open them without a prompt, and macOS fills it in with the
+  signature of whichever program created the entry. Creating them from Janus
+  would partition them to Janus, locking Claude Code out of its own tokens, and
+  Janus out of them again after its next build, since it is signed ad-hoc and its
+  signature changes each time. Going through `security` puts them in the
+  `apple-tool:` partition, which is where Claude Code writes its own. The payload
+  is passed to `security` as a hex argument, because it reads at most 128 bytes
+  from standard input and a session is several times that; process arguments are
+  visible to other processes of the same user, and to root, for as long as that
+  one-shot call lives.
 - **Reads and writes `~/.claude.json`** (or `~/.claude/.claude.json`, if that is
   where the installed Claude Code keeps it).
 - **Stores saved sessions** as keychain entries under the service `Janus`,
@@ -32,8 +44,8 @@ Useful context for anyone assessing a report. The app:
 - **Moves cache directories to the Trash**, restricted to paths inside the user's
   home directory that pass `TrashPolicy` in
   `Sources/JanusCore/Reclaim.swift`. Nothing is deleted outright.
-- **Runs one external command**, `/usr/bin/du`, by absolute path and with no
-  shell, to measure directory sizes.
+- **Runs two external commands**, `/usr/bin/security` and `/usr/bin/du`, both by
+  absolute path and with no shell.
 
 The app makes no network requests. There is no networking code in the repository,
 and usage figures shown in the interface are read from the settings file Claude
@@ -46,7 +58,8 @@ than with an Apple Developer certificate.
 ## Things that are known and are not bugs
 
 - **Saved sessions are recoverable by anyone who can unlock your login keychain.**
-  That is the same bar as the credentials Claude Code stores on its own.
+  That is the same bar as the credentials Claude Code stores on its own, and for
+  the same reason: they sit in the same partition, reachable by the same tool.
 - **A saved settings snapshot contains whatever `~/.claude.json` contained**,
   including project paths and history. It is stored with owner-only permissions
   but is not separately encrypted.

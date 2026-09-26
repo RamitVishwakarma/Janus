@@ -39,6 +39,16 @@ final class Sandbox {
         try secrets.remove(session.credentials)
     }
 
+    /// Makes the live keychain entry unreadable, the way macOS leaves it when
+    /// its permission prompt is declined or never answered.
+    func refuseLiveKeychain() {
+        secrets.refuseReads(of: session.credentials)
+    }
+
+    func allowLiveKeychain() {
+        secrets.allowReads(of: session.credentials)
+    }
+
     var liveToken: String? {
         (try? secrets.read(session.credentials)).map { String(decoding: $0, as: UTF8.self) }
     }
