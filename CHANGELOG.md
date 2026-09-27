@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-27
+
 ### Added
 
 - Refresh now asks Anthropic for each account's figures rather than only
@@ -83,6 +85,7 @@ First public release.
   directory and anything held open by a running app.
 - Universal builds published as a `.dmg` and a `.zip` with SHA-256 checksums.
 
-[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RamitVishwakarma/Janus/releases/tag/v1.0.0
