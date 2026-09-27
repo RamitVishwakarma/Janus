@@ -55,11 +55,11 @@ struct MenuBarContent: View {
     private var header: some View {
         if let active = accounts.active {
             Text("Signed in as \(active.email)")
-            if let usage = accounts.usage[active.id] {
-                if let week = usage.sevenDay {
+            if let usage = accounts.reading(for: active)?.usage {
+                if let week = usage.sevenDay, !week.hasReset(by: accounts.now) {
                     Text("Weekly limit \(week.percentUsed)% used")
                 }
-                if let resets = Elapsed.until(usage.sevenDay?.resetsAt) {
+                if let resets = Elapsed.until(usage.sevenDay?.resetsAt, now: accounts.now) {
                     Text(resets.prefix(1).uppercased() + resets.dropFirst())
                 }
             }

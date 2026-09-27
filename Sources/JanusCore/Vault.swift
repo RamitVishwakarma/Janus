@@ -92,8 +92,40 @@ public final class Vault: Sendable {
     public func refreshStoredSettings(_ settings: Data, for id: UUID) throws {
         let destination = settingsURL(for: id)
         guard fileManager.fileExists(atPath: destination.path) else { return }
+        // Nothing to do when the bytes already match, which is the common case
+        // now that the window re-reads on a timer rather than only when asked.
+        guard fileManager.contents(atPath: destination.path) != settings else { return }
         try settings.write(to: destination, options: .atomic)
         restrict(destination)
+    }
+
+    /// The OAuth blob saved for an account, parsed.
+    ///
+    /// Reading a secret, so it belongs to the operations that may stop to ask
+    /// macOS for permission. In practice it does not: entries are written through
+    /// `security` and land in a partition Janus can reopen without a prompt.
+    public func credentials(for id: UUID) throws -> Credentials {
+        let raw = try secrets.read(credentialAddress(for: id))
+        guard let parsed = Credentials(raw) else { throw VaultError.unreadableCredentials(id) }
+        return parsed
+    }
+
+    /// Puts renewed tokens in the place of the ones they replace.
+    public func replaceCredentials(_ credentials: Credentials, for id: UUID) throws {
+        try prepareDirectories()
+        try secrets.write(credentials.raw, to: credentialAddress(for: id))
+    }
+
+    /// Writes a set of figures into an account's saved settings.
+    ///
+    /// Best effort, and deliberately silent about failing: the figures are
+    /// already on screen by the time this runs, and a saved copy that could not
+    /// be updated costs nothing more than having to fetch them again.
+    public func rememberUsage(_ limits: [String: Any], for id: UUID, at moment: Date) {
+        guard let stored = storedSettings(for: id),
+              let updated = SessionSettings(raw: stored).recording(limits, at: moment)
+        else { return }
+        try? refreshStoredSettings(updated, for: id)
     }
 
     public func session(for id: UUID) throws -> StoredSession {
@@ -166,6 +198,7 @@ public struct StoredSession: Equatable {
 public enum VaultError: LocalizedError, Equatable {
     case unreadableRoster(URL)
     case noSavedSession(UUID)
+    case unreadableCredentials(UUID)
 
     public var errorDescription: String? {
         switch self {
@@ -173,6 +206,8 @@ public enum VaultError: LocalizedError, Equatable {
             return "The account list at \(url.path) could not be read."
         case .noSavedSession:
             return "This account has no saved session. Sign in as it and add it again."
+        case .unreadableCredentials:
+            return "The saved tokens for this account are not in a shape Janus understands."
         }
     }
 }

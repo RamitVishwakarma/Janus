@@ -42,13 +42,16 @@ public final class Switcher: Sendable {
     private let vault: Vault
     private let session: Session
     private let secrets: SecretStore
+    private let api: UsageEndpoint
 
     public init(vault: Vault = Vault(),
                 session: Session = .current(),
-                secrets: SecretStore = SystemKeychain()) {
+                secrets: SecretStore = SystemKeychain(),
+                api: UsageEndpoint = AnthropicUsage()) {
         self.vault = vault
         self.session = session
         self.secrets = secrets
+        self.api = api
     }
 
     private var fileManager: FileManager { .default }
@@ -69,8 +72,12 @@ public final class Switcher: Sendable {
         vault.hasSession(for: profile.id)
     }
 
-    /// Plan usage for an account: live figures for the signed-in one, and the
-    /// figures frozen at its last sign-out for the rest.
+    /// Plan usage for an account as it can be had off the disk: the signed-in
+    /// account's live figures, and for the rest whatever was last written into
+    /// their saved copy — their sign-out, or the last time they were fetched.
+    ///
+    /// Costs nothing and cannot fail, which is why it is what the window draws
+    /// first and `fetchUsage(for:isActive:now:)` only improves on.
     public func usage(for profile: Profile, isActive: Bool) -> Usage? {
         if isActive { return liveSettings()?.usage }
         guard let stored = vault.storedSettings(for: profile.id) else { return nil }
@@ -82,15 +89,100 @@ public final class Switcher: Sendable {
         return settings.usage
     }
 
+    // MARK: - Asking Anthropic
+
+    /// An account's figures as they stand right now, fetched rather than read.
+    ///
+    /// The only thing here that touches the network, and the only way a parked
+    /// account's numbers can be anything but frozen: its saved settings file
+    /// stopped moving when it was last signed out, and reading it again a week
+    /// later gives the same answer it gave a week ago.
+    ///
+    /// The signed-in account is fetched without ever renewing its token, which is
+    /// the one asymmetry worth stating plainly. Renewing spends the refresh token
+    /// and issues another in its place, and a running Claude Code session holds
+    /// the old one in memory; rotating it underneath that session is how a
+    /// sign-in that was working stops working. Nothing is lost by the rule,
+    /// because Claude Code keeps the live token fresh itself.
+    public func fetchUsage(for profile: Profile,
+                           isActive: Bool,
+                           now: Date = Date()) async throws -> Usage {
+        let saved = try credentials(for: profile, isActive: isActive)
+        var credentials = saved
+
+        if !isActive, !credentials.isFresh(at: now) {
+            credentials = try await renew(credentials, for: profile.id, now: now)
+        }
+
+        var body: Data
+        do {
+            body = try await api.usage(accessToken: credentials.accessToken)
+        } catch UsageAPIError.signInAgain {
+            // The signed-in account is never renewed from here, so a refusal is
+            // as far as it goes — and it needs saying differently, because the
+            // account it happened to is the one already signed in.
+            guard !isActive else { throw UsageAPIError.signInRefused }
+
+            // A token already renewed once in this call and refused anyway means
+            // the sign-in itself is gone, not merely stale. One attempt only.
+            guard credentials == saved else { throw UsageAPIError.signInAgain }
+
+            // Rejected while still in date, which happens when a sign-in was
+            // revoked or the clock disagrees. Worth one renewal before giving up,
+            // because the refresh token may well outlive whatever went wrong.
+            credentials = try await renew(credentials, for: profile.id, now: now)
+            body = try await api.usage(accessToken: credentials.accessToken)
+        }
+
+        guard let limits = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else {
+            throw UsageAPIError.malformedAnswer
+        }
+
+        // An answer with no limits in it is not a reading. Claude Code's own
+        // client returns an empty object for accounts it cannot measure, and
+        // taking that at face value would blank a perfectly good saved figure —
+        // and then write the blank over it, which is the one mistake here that
+        // cannot be undone by asking again.
+        let usage = Usage(limits: limits, measuredAt: now)
+        guard !usage.isEmpty else { throw UsageAPIError.noFigures }
+
+        // Kept only for saved accounts. The live settings file belongs to Claude
+        // Code, which is writing its own figures into it as it goes, and a second
+        // writer is a good way to lose whichever set of numbers lands first.
+        if !isActive { vault.rememberUsage(limits, for: profile.id, at: now) }
+
+        return usage
+    }
+
+    private func credentials(for profile: Profile, isActive: Bool) throws -> Credentials {
+        guard isActive else { return try vault.credentials(for: profile.id) }
+        guard let raw = try? secrets.read(session.credentials), let parsed = Credentials(raw) else {
+            throw UsageAPIError.noCredentials
+        }
+        return parsed
+    }
+
+    private func renew(_ credentials: Credentials, for id: UUID, now: Date) async throws -> Credentials {
+        let renewed = try await api.renew(credentials, now: now)
+
+        // Stored before it is used for anything. The renewal has already spent
+        // the token that was there, so what came back is now the only way into
+        // this account that exists; dropping it because the request after this
+        // one failed would leave the account needing a fresh sign-in.
+        try vault.replaceCredentials(renewed, for: id)
+        return renewed
+    }
+
     // MARK: - Writing
 
     /// Copies the signed-in account's settings into its saved slot, so the
     /// figures Janus shows for it keep up with what Claude Code has measured.
     ///
-    /// One file copy and no keychain access, which is what makes it cheap enough
-    /// to do on every refresh. It is also the only account whose figures can
-    /// move: the others are files Claude Code is not writing to, and Janus has no
-    /// way to ask for their numbers without signing them in first.
+    /// One file copy and no keychain access and no network, which is what makes
+    /// it cheap enough to do every time the window redraws itself. It is also the
+    /// only account whose figures move on their own: the rest are files Claude
+    /// Code is not writing to, and only `fetchUsage(for:isActive:now:)` can move
+    /// those.
     ///
     /// - Returns: the account brought up to date, if there was one.
     @discardableResult

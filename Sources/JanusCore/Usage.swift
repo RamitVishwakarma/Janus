@@ -2,10 +2,11 @@ import Foundation
 
 /// How much of a plan's limits an account has spent.
 ///
-/// Read straight out of Claude Code's own settings file. Janus never calls
-/// an API for this. The upside is that it costs nothing and works offline; the
-/// downside is that a saved account's figures are frozen at the moment it was last
-/// signed in, which `measuredAt` makes it possible to say out loud.
+/// Comes from one of two places, which `UsageSource` names: Claude Code's own
+/// settings file, which costs nothing to read but only ever holds what the last
+/// session measured, or Anthropic's usage endpoint, which is current but needs
+/// the network and the account's token. `measuredAt` is what makes the
+/// difference sayable out loud rather than left for someone to guess.
 public struct Usage: Equatable {
 
     /// One rolling limit: how much of it is gone, and when it starts over.
@@ -83,6 +84,18 @@ public struct Usage: Equatable {
             return
         }
 
+        read(limits)
+    }
+
+    /// Builds a reading from the limits object on its own, which is the shape the
+    /// usage endpoint answers in and the shape Claude Code files under
+    /// `utilization` when it writes the same answer to disk.
+    public init(limits: [String: Any], measuredAt: Date) {
+        self.measuredAt = measuredAt
+        read(limits)
+    }
+
+    private mutating func read(_ limits: [String: Any]) {
         fiveHour = Usage.window(limits["five_hour"])
         sevenDay = Usage.window(limits["seven_day"])
 
@@ -90,8 +103,7 @@ public struct Usage: Equatable {
            let rows = breakdown["rows"] as? [[String: Any]] {
             self.breakdown = rows.compactMap { row in
                 guard let label = row["display_name"] as? String,
-                      let percent = row["percent"] as? Int,
-                      percent > 0
+                      let percent = Usage.percent(row["percent"]), percent > 0
                 else { return nil }
                 return Slice(label: label, percent: percent)
             }
@@ -100,9 +112,19 @@ public struct Usage: Equatable {
 
     private static func window(_ value: Any?) -> Window? {
         guard let object = value as? [String: Any],
-              let percent = object["utilization"] as? Int
+              let percent = percent(object["utilization"])
         else { return nil }
         return Window(percentUsed: percent, resetsAt: timestamp(object["resets_at"] as? String))
+    }
+
+    /// A percentage as a whole number, whichever way it arrived.
+    ///
+    /// The settings file holds these as integers and the endpoint answers with
+    /// decimals for the same fields, so reading only one of the two would leave
+    /// every fetched figure missing rather than merely imprecise.
+    static func percent(_ value: Any?) -> Int? {
+        guard let number = value as? NSNumber else { return nil }
+        return Int(number.doubleValue.rounded())
     }
 
     static func timestamp(_ text: String?) -> Date? {
@@ -113,6 +135,20 @@ public struct Usage: Equatable {
         reader.formatOptions = [.withInternetDateTime]
         return reader.date(from: text)
     }
+}
+
+/// Where a reading came from, which is the whole of what decides how much it can
+/// be trusted to be current.
+public enum UsageSource: Equatable, Sendable {
+
+    /// Claude Code's live settings file: as current as the last session made it.
+    case liveSettings
+
+    /// The copy saved when the account was last signed out. Frozen ever since.
+    case savedSettings
+
+    /// Asked of Anthropic just now, for an account that need not be signed in.
+    case fetched
 }
 
 /// Durations phrased the way someone deciding whether to keep working would want

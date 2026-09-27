@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Refresh now asks Anthropic for each account's figures rather than only
+  re-reading what Claude Code left on disk. A saved account's numbers used to be
+  frozen at the moment it was last signed out, because that file is the only
+  place they were written and nothing writes to it while the account is parked.
+  One request per account, made with the tokens that account already has saved,
+  and the line under each pair of bars says whether you are looking at a fetched
+  figure or a remembered one. A fetched figure is kept, so it survives the app
+  being quit and gives the account a current cache the next time it signs in.
+  Expired tokens are renewed first, and what comes back is stored before it is
+  used for anything else. The signed-in account is never renewed by Janus: a
+  running Claude Code session is holding that token, and Claude Code keeps it
+  fresh itself.
+- The window keeps its own time. Countdowns run down and a limit that passes its
+  reset empties itself while the window sits open, instead of waiting for
+  something to force a redraw — a row drawn at nine used to still be claiming
+  "resets in 2h 22m" at midnight. A window actually turning over also triggers a
+  fetch, since that is the moment the old figure stops describing anything.
+
 ## [1.0.1] - 2026-09-26
 
 ### Fixed

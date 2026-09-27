@@ -78,4 +78,27 @@ public struct SessionSettings {
     /// True when the file parses and names an account, which is the bar for
     /// treating it as a session worth saving.
     public var isSignedIn: Bool { email != nil }
+
+    /// The same file with a fresh set of figures written into it, under the key
+    /// and in the shape Claude Code uses.
+    ///
+    /// So that a reading fetched over the network outlives the app being quit,
+    /// and so that the account it belongs to starts its next session with a cache
+    /// that is not months old. Everything else in the file is left as it was.
+    public func recording(_ limits: [String: Any], at moment: Date) -> Data? {
+        guard var root = try? JSONSerialization.jsonObject(with: raw) as? [String: Any]
+        else { return nil }
+
+        var cached: [String: Any] = [
+            // Whole milliseconds, which is what Claude Code writes here and what
+            // it reads back. A fraction of one would very likely be tolerated;
+            // matching the file's own convention costs nothing and assumes less.
+            "fetchedAtMs": (moment.timeIntervalSince1970 * 1000).rounded(),
+            "utilization": limits
+        ]
+        if let accountID { cached["accountUuid"] = accountID }
+        root["cachedUsageUtilization"] = cached
+
+        return try? JSONSerialization.data(withJSONObject: root)
+    }
 }
