@@ -8,6 +8,10 @@ have noticed how much disk the tools they use every day quietly hold onto.
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-lightgrey)
 
+![Janus switching between two saved Claude Code accounts](demo/demo.gif)
+
+One click moves the live session, and the account it displaces is saved first.
+
 It does two things:
 
 - **Switches Claude Code accounts.** Signing in as another account normally means
@@ -20,14 +24,21 @@ It does two things:
 
 ## Install
 
-Download the latest `.dmg` from
-[Releases](https://github.com/RamitVishwakarma/Janus/releases/latest), open
-it, and drag Janus to Applications. The build is universal, covering Apple
-silicon and Intel.
+With Homebrew:
+
+```sh
+brew install --cask --no-quarantine ramitvishwakarma/tap/janus
+```
+
+Or download the latest `.dmg` from
+[Releases](https://github.com/RamitVishwakarma/Janus/releases/latest), open it,
+and drag Janus to Applications. The build is universal, covering Apple silicon
+and Intel.
 
 The app is signed ad-hoc rather than with a paid Apple Developer certificate, so
 macOS quarantines it on first launch and says the developer cannot be verified.
-Clear the quarantine flag once:
+`--no-quarantine` tells Homebrew to skip that flag. After a download by hand,
+clear it once:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/Janus.app
@@ -62,6 +73,8 @@ already. Press **Save current account** and it is captured.
 For the second: sign out of Claude Code, sign in as the other account, come back,
 and press **Save current account** again. From then on both are in the list and
 switching between them is one click, or `⌘S` from the menu bar.
+
+![The Janus window, with both accounts and how much of each limit they have spent](demo/screenshot.png)
 
 The menu bar item shows which account is live. The window shows both accounts
 with how much of their five-hour and weekly limits each has spent. That is the
