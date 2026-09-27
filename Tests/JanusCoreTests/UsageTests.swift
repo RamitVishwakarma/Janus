@@ -21,6 +21,25 @@ final class UsageTests: XCTestCase {
         XCTAssertFalse(settings("<html>nope</html>").isSignedIn)
     }
 
+    func testReadsTheLimitsObjectOnItsOwn() throws {
+        let moment = Date(timeIntervalSince1970: 1_700_000_000)
+        let limits: [String: Any] = [
+            "five_hour": ["utilization": 73.4, "resets_at": "2030-01-01T10:00:00.374945+00:00"],
+            "seven_day": ["utilization": 76.0, "resets_at": "2030-01-05T10:00:00Z"],
+            "seven_day_breakdown": ["rows": [["display_name": "Claude Code", "percent": 99.0],
+                                             ["display_name": "Other", "percent": 0.0]]]
+        ]
+
+        let usage = Usage(limits: limits, measuredAt: moment)
+
+        XCTAssertEqual(usage.fiveHour?.percentUsed, 73)
+        XCTAssertEqual(usage.sevenDay?.percentUsed, 76)
+        XCTAssertEqual(usage.breakdown, [.init(label: "Claude Code", percent: 99)])
+        XCTAssertEqual(usage.measuredAt, moment)
+        XCTAssertNotNil(usage.fiveHour?.resetsAt,
+                        "the endpoint answers with six fractional digits and an offset")
+    }
+
     func testUsageIsAbsentUntilTheAccountHasBeenUsed() {
         XCTAssertNil(settings(#"{"oauthAccount":{"emailAddress":"a@b.com"}}"#).usage)
     }

@@ -81,6 +81,41 @@ with how much of their five-hour and weekly limits each has spent. That is the
 number to look at when the decision you are making is *which account has room
 left*.
 
+## Where the usage figures come from
+
+Claude Code asks Anthropic for your limits while a session is running and writes
+the answer into its own settings file. Janus reads that file for nothing, which
+is what every row shows to begin with. For the account that is signed in, those
+figures are as current as your last session. For an account that is not, they
+are whatever it had spent at the moment you switched away — frozen, and
+increasingly wrong the longer it sits there.
+
+**Refresh** goes and asks. It calls Anthropic's usage endpoint once per account,
+with the tokens that account already has saved, and shows what comes back. That
+is the only network request Janus makes, it goes nowhere but `api.anthropic.com`
+and `platform.claude.com`, and nothing is sent that is not the account's own
+credentials. The line under each pair of bars says which of the two you are
+looking at, so a fetched figure and a three-day-old one are never confusable.
+
+Two things happen on their own, without the button:
+
+- **The window keeps its own time.** Countdowns tick down and a limit that
+  passes its reset empties itself while you are looking at it, rather than
+  waiting for the next time something forces a redraw.
+- **A window turning over is fetched.** That is the one moment the old figure
+  becomes actively misleading — it is the spend of a window that has ended — so
+  it is the one moment Janus spends a request without being asked.
+
+A limit past its reset shows a dash until it has been fetched. Guessing at the
+replacement would be worse than admitting there isn't one yet.
+
+Saved accounts are renewed as needed: an access token that has expired is
+refreshed before the usage request, and the tokens that come back are written
+into the vault before anything else is attempted with them. The signed-in
+account's token is never renewed by Janus, because a running Claude Code session
+is holding it, and rotating it underneath that session is how a sign-in that was
+working stops working. Claude Code keeps that one fresh itself.
+
 ## How switching works
 
 A signed-in Claude Code session is two things on disk:
@@ -98,8 +133,9 @@ by you.
 
 Three things follow from that, and are worth knowing before you trust it:
 
-- **Nothing leaves the Mac.** There is no server, no telemetry, and no network
-  code in this repository.
+- **Nothing leaves the Mac except a usage request you asked for.** There is no
+  server and no telemetry. The one thing that goes out is Refresh asking
+  Anthropic for your own figures with your own tokens, described above.
 - **The settings file is written back whole.** It belongs to another program and
   gains keys between releases, so Janus parses what it needs and preserves
   everything else byte for byte.

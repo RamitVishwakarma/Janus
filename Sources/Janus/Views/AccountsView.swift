@@ -34,7 +34,8 @@ struct AccountsView: View {
                                 position: index + 1,
                                 isActive: model.isActive(profile),
                                 isBusy: model.isWorking,
-                                usage: model.usage[profile.id],
+                                reading: model.reading(for: profile),
+                                now: model.now,
                                 canRestore: model.canRestore(profile),
                                 canMoveUp: index > 0,
                                 canMoveDown: index < profiles.count - 1,
@@ -145,12 +146,19 @@ struct AccountsView: View {
             Text("""
                  Claude Code asks Anthropic for your limits while a session is \
                  running and writes the answer into its own settings file. Janus \
-                 reads that file and nothing else: it makes no network requests, so \
-                 it can only show what the last session measured.
+                 reads that file for free, which is what every row shows to begin \
+                 with — and for an account that is not signed in, the last thing \
+                 written there is however much it had spent when you switched away.
 
-                 That is why a limit which has passed its reset shows a dash. The \
-                 old figure belongs to a window that has ended, and the new one does \
-                 not exist until a session runs and measures it.
+                 Refresh goes further and asks Anthropic directly, for every \
+                 account, using the tokens each one already has saved. That is the \
+                 only network request Janus makes, it goes to nowhere but Anthropic, \
+                 and nothing happens without you pressing the button. The line under \
+                 each pair of bars says which of the two you are looking at.
+
+                 A limit past its reset still shows a dash until it is fetched. The \
+                 old figure belongs to a window that has ended, and guessing at its \
+                 replacement would be worse than admitting there isn't one yet.
                  """)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -195,7 +203,8 @@ private struct AccountRow: View {
     let position: Int
     let isActive: Bool
     let isBusy: Bool
-    let usage: Usage?
+    let reading: Reading?
+    let now: Date
     let canRestore: Bool
     let canMoveUp: Bool
     let canMoveDown: Bool
@@ -236,8 +245,8 @@ private struct AccountRow: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
-                } else if let usage, !usage.isEmpty {
-                    UsagePanel(usage: usage, isLive: isActive)
+                } else if let reading, !reading.usage.isEmpty {
+                    UsagePanel(usage: reading.usage, source: reading.source, now: now)
                 } else {
                     Text(isActive ? "Signed in" : "No usage recorded yet")
                         .font(.caption)

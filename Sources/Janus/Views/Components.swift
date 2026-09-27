@@ -66,11 +66,17 @@ struct Message: View {
 /// percentage. The last figure is not the current one and there is no honest way
 /// to guess what replaced it, so the bar says nothing rather than saying the old
 /// number again.
+///
+/// `now` is handed in rather than read here, so that the moment the whole window
+/// is drawn against is one moment, and so that it moving is something the model
+/// can cause. A bar that read the clock itself would read it once, when it was
+/// first drawn, and go on believing that answer all evening.
 struct LimitBar: View {
     let caption: String
     let window: Usage.Window
+    let now: Date
 
-    private var hasReset: Bool { window.hasReset() }
+    private var hasReset: Bool { window.hasReset(by: now) }
 
     private var tint: Color {
         switch window.percentUsed {
@@ -90,7 +96,11 @@ struct LimitBar: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.secondary.opacity(0.18))
-                    if !hasReset {
+                    // Nothing spent draws nothing. The floor below is there to
+                    // keep 1% visible rather than to give 0% something to show,
+                    // and a window that has just started over is exactly where a
+                    // sliver of colour would be read as a sliver of spend.
+                    if !hasReset, window.percentUsed > 0 {
                         Capsule()
                             .fill(tint)
                             .frame(width: max(2, geometry.size.width
@@ -105,7 +115,7 @@ struct LimitBar: View {
                 .foregroundStyle(hasReset ? .tertiary : .secondary)
                 .frame(width: 34, alignment: .leading)
 
-            if let resets = Elapsed.until(window.resetsAt) {
+            if let resets = Elapsed.until(window.resetsAt, now: now) {
                 Text(resets)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -115,15 +125,20 @@ struct LimitBar: View {
 }
 
 /// Both limits plus a line saying how current the figures are, which matters
-/// because a saved account's numbers stopped moving when it was last signed in.
+/// because only one of the three ways they can arrive is current by definition.
 struct UsagePanel: View {
     let usage: Usage
-    let isLive: Bool
+    let source: UsageSource
+    let now: Date
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            if let window = usage.fiveHour { LimitBar(caption: "5-hour", window: window) }
-            if let window = usage.sevenDay { LimitBar(caption: "7-day", window: window) }
+            if let window = usage.fiveHour {
+                LimitBar(caption: "5-hour", window: window, now: now)
+            }
+            if let window = usage.sevenDay {
+                LimitBar(caption: "7-day", window: window, now: now)
+            }
 
             HStack(spacing: 5) {
                 Text(freshness)
@@ -146,27 +161,32 @@ struct UsagePanel: View {
     }
 
     private var freshness: String {
-        if isLive {
+        let measured = Elapsed.since(usage.measuredAt, now: now)
+
+        switch source {
+        case .fetched:
+            guard let measured else { return "asked Anthropic" }
+            return "asked Anthropic \(measured)"
+
+        case .liveSettings:
             // "current" stops being true the moment a window turns over: the file
             // is still the latest one Claude Code wrote, and that is now old news.
-            guard !usage.resetWindows().isEmpty,
-                  let measured = Elapsed.since(usage.measuredAt)
-            else { return "current" }
+            guard !usage.resetWindows(by: now).isEmpty, let measured else { return "current" }
             return "measured \(measured)"
-        }
-        if let measured = Elapsed.since(usage.measuredAt) {
+
+        case .savedSettings:
+            guard let measured else { return "from the last saved session" }
             return "measured \(measured), when last signed in"
         }
-        return "from the last saved session"
     }
 
     /// What to do about a figure that has stopped moving.
     ///
-    /// Only offered for the signed-in account, because it is the only one a
-    /// session can be started for without switching first — and a saved account's
-    /// line already says its numbers are frozen at its last sign-in.
+    /// The same answer whichever account it is now, which it was not before: a
+    /// window that has turned over can be measured again without signing anybody
+    /// in, so the remedy no longer depends on which account is which.
     private var advice: String? {
-        guard isLive, !usage.resetWindows().isEmpty else { return nil }
-        return "Start a Claude Code session to measure the new window."
+        guard !usage.resetWindows(by: now).isEmpty else { return nil }
+        return "That window has started over. Press Refresh to fetch the new figure."
     }
 }
