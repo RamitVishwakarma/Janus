@@ -23,6 +23,12 @@ public struct Session: Sendable {
     /// The settings file sits inside `~/.claude` on newer installs and directly in
     /// the home directory on older ones; whichever exists is the live one, and a
     /// fresh install that has neither gets the current default.
+    ///
+    /// Both can exist at once: a Claude Code started with `CLAUDE_CONFIG_DIR=~/.claude`,
+    /// for one, leaves a stub in `~/.claude` that never records a sign-in, while the
+    /// real session carries on in the home directory. Existing
+    /// is therefore not enough: the file naming an account wins, and the order
+    /// above only breaks a tie.
     public static func current(
         home: URL = URL(fileURLWithPath: NSHomeDirectory()),
         user: String = NSUserName(),
@@ -30,7 +36,11 @@ public struct Session: Sendable {
     ) -> Session {
         let nested = home.appendingPathComponent(".claude/.claude.json")
         let legacy = home.appendingPathComponent(".claude.json")
-        let settings = fileManager.fileExists(atPath: nested.path) ? nested : legacy
+        let existing = [nested, legacy].filter { fileManager.fileExists(atPath: $0.path) }
+        let signedIn = existing.first { url in
+            fileManager.contents(atPath: url.path).map { SessionSettings(raw: $0).isSignedIn } ?? false
+        }
+        let settings = signedIn ?? existing.first ?? legacy
 
         return Session(
             credentials: SecretAddress(service: credentialService, account: user),
