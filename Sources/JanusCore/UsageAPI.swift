@@ -54,7 +54,8 @@ public protocol UsageEndpoint: Sendable {
 
 /// Anthropic's own usage endpoint, reached with the account's own token.
 ///
-/// The only network code in Janus, and it talks to one host. These are the
+/// All of Janus's network code for Claude, and it talks to Anthropic alone;
+/// `OpenAIUsage` is its counterpart for Codex. These are the
 /// requests Claude Code makes for `/usage`, made the same way and with the same
 /// credentials; the difference is that Janus can make them for an account that is
 /// not the one signed in, which is the only way a parked account's figures can

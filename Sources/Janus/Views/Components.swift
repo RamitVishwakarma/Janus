@@ -130,6 +130,7 @@ struct UsagePanel: View {
     let usage: Usage
     let source: UsageSource
     let now: Date
+    var provider = "Anthropic"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -165,8 +166,8 @@ struct UsagePanel: View {
 
         switch source {
         case .fetched:
-            guard let measured else { return "asked Anthropic" }
-            return "asked Anthropic \(measured)"
+            guard let measured else { return "asked \(provider)" }
+            return "asked \(provider) \(measured)"
 
         case .liveSettings:
             // "current" stops being true the moment a window turns over: the file

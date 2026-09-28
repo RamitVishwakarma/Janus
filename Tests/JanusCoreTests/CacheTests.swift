@@ -64,7 +64,7 @@ final class TrashPolicyTests: XCTestCase {
 
     func testRefusesTheDirectoriesEverythingElseLivesIn() {
         for path in ["Desktop", "Documents", "Downloads", "Library",
-                     "Library/Caches", "Library/Application Support", ".ssh", ".claude"] {
+                     "Library/Caches", "Library/Application Support", ".ssh", ".claude", ".codex"] {
             XCTAssertFalse(permits("/Users/tester/" + path), "~/\(path) must be refused")
         }
     }
