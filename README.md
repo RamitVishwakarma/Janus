@@ -9,7 +9,7 @@ hold onto.
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-lightgrey)
 
-![Janus switching between two saved Claude Code accounts](demo/demo.gif)
+![Janus switching Codex from an account at its weekly limit to one with room left](demo/demo.gif)
 
 One click moves the live session, and the account it displaces is saved first.
 
