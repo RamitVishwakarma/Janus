@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-click switch to the next.
 - `~/.codex` is guarded from cache clearing, as `~/.claude` already was.
 
+### Fixed
+
+- A signed-in Claude Code account is no longer reported as signed out when a
+  `~/.claude/.claude.json` exists. That file is not the live one on a default
+  install; it is what Claude Code writes when started with
+  `CLAUDE_CONFIG_DIR=~/.claude`, and other tools leave one behind holding only
+  caches. Janus now finds the session the way Claude Code does: `~/.claude.json`
+  (or `$CLAUDE_CONFIG_DIR/.claude.json`, or a pre-1.0 `.config.json`), with the
+  keychain entry under `Claude Code-credentials`, suffixed with the hash of the
+  configuration directory when `CLAUDE_CONFIG_DIR` moves it, and the keychain
+  account taken from `$USER` as Claude Code takes it.
+
 ## [1.1.0] - 2026-09-27
 
 ### Added
