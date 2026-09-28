@@ -152,7 +152,7 @@ struct AccountsView: View {
 
                  Refresh goes further and asks Anthropic directly, for every \
                  account, using the tokens each one already has saved. That is the \
-                 only network request Janus makes, it goes to nowhere but Anthropic, \
+                 only request Janus makes for Claude, it goes to nowhere but Anthropic, \
                  and nothing happens without you pressing the button. The line under \
                  each pair of bars says which of the two you are looking at.
 
@@ -198,7 +198,9 @@ private struct EmptyAccounts: View {
     }
 }
 
-private struct AccountRow: View {
+/// One saved account: its place in the rotation, its figures, and the buttons
+/// that act on it. Shared by the Claude and Codex lists.
+struct AccountRow: View {
     let profile: Profile
     let position: Int
     let isActive: Bool
@@ -212,6 +214,16 @@ private struct AccountRow: View {
     let onMoveDown: () -> Void
     let onSwitch: () -> Void
     let onRemove: () -> Void
+
+    /// Who the figures were fetched from, for the line under the bars.
+    var provider = "Anthropic"
+
+    /// A word beside the name, such as the plan, for telling apart two accounts
+    /// that share an email.
+    var detail: String?
+
+    /// What to say in place of figures, for an account that has none yet.
+    var unmeasured = "No usage recorded yet"
 
     var body: some View {
         HStack(spacing: 12) {
@@ -236,8 +248,15 @@ private struct AccountRow: View {
                 .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(profile.email)
-                    .font(.body.weight(isActive ? .semibold : .regular))
+                HStack(spacing: 6) {
+                    Text(profile.email)
+                        .font(.body.weight(isActive ? .semibold : .regular))
+                    if let detail {
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 if !canRestore {
                     Label("Saved session incomplete. Sign in as this account and save again",
@@ -246,9 +265,10 @@ private struct AccountRow: View {
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let reading, !reading.usage.isEmpty {
-                    UsagePanel(usage: reading.usage, source: reading.source, now: now)
+                    UsagePanel(usage: reading.usage, source: reading.source, now: now,
+                               provider: provider)
                 } else {
-                    Text(isActive ? "Signed in" : "No usage recorded yet")
+                    Text(isActive ? "Signed in" : unmeasured)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

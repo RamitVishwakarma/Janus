@@ -2,10 +2,11 @@ import AppKit
 import SwiftUI
 import JanusCore
 
-/// The menu bar dropdown: current account, one-click switch, and a way in.
+/// The menu bar dropdown: current accounts, one-click switches, and a way in.
 struct MenuBarContent: View {
 
     @ObservedObject var accounts: AccountsModel
+    @ObservedObject var codex: CodexModel
     @ObservedObject var caches: CachesModel
     @Environment(\.openWindow) private var openWindow
 
@@ -34,6 +35,10 @@ struct MenuBarContent: View {
 
         Divider()
 
+        codexSection
+
+        Divider()
+
         Button(storageTitle) {
             caches.scan()
             reveal()
@@ -45,6 +50,7 @@ struct MenuBarContent: View {
             .keyboardShortcut("o")
         Button("Refresh") {
             accounts.refresh()
+            if !codex.profiles.isEmpty { codex.refresh() }
             caches.scan()
         }
         Button("Quit Janus") { NSApplication.shared.terminate(nil) }
@@ -68,6 +74,43 @@ struct MenuBarContent: View {
         } else {
             Text("No account signed in")
         }
+    }
+
+    /// The same three things for Codex: who is signed in, the next account round,
+    /// and the rest. No keyboard shortcut, so that ⌘S keeps meaning what it
+    /// always has.
+    @ViewBuilder
+    private var codexSection: some View {
+        if let active = codex.active {
+            Text("Codex: \(active.email)")
+        } else if let name = codex.signedInName {
+            Text("Codex: \(name), not saved yet")
+        } else {
+            Text("Codex: not signed in")
+        }
+
+        if codex.isWorking {
+            Text("Working…")
+        } else if let next = codex.next, next.id != codex.active?.id, codex.canRestore(next) {
+            Button("Switch Codex to \(next.shortName)") { codex.switchToNext() }
+        } else if codex.signedInName != nil, !codex.currentAccountIsManaged {
+            Button("Save this Codex account") { codex.addCurrentAccount() }
+        }
+
+        if codex.profiles.count > 1 {
+            Menu("Codex accounts") {
+                ForEach(codex.profiles) { profile in
+                    Button(codexLabel(for: profile)) { codex.switchTo(profile) }
+                        .disabled(codex.isActive(profile) || !codex.canRestore(profile))
+                }
+            }
+        }
+    }
+
+    private func codexLabel(for profile: Profile) -> String {
+        let marker = codex.isActive(profile) ? "●" : "○"
+        let plan = profile.plan.map { " (\($0.capitalized))" } ?? ""
+        return "\(marker)  \(profile.email)\(plan)"
     }
 
     private func label(for profile: Profile) -> String {

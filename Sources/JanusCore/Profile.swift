@@ -11,14 +11,27 @@ public struct Profile: Identifiable, Codable, Hashable {
     public var addedAt: Date
     public var lastActiveAt: Date?
 
+    /// The provider's own identifier for the account, where email alone is not
+    /// enough to tell two apart. Codex has one sign-in per workspace, and a
+    /// personal plan and a team plan under the same address are two accounts.
+    /// Absent for Claude Code, and from rosters written before it existed.
+    public var accountID: String?
+
+    /// The plan the account was on when it was last saved, e.g. "plus".
+    public var plan: String?
+
     public init(id: UUID = UUID(),
                 email: String,
                 addedAt: Date = Date(),
-                lastActiveAt: Date? = nil) {
+                lastActiveAt: Date? = nil,
+                accountID: String? = nil,
+                plan: String? = nil) {
         self.id = id
         self.email = email
         self.addedAt = addedAt
         self.lastActiveAt = lastActiveAt
+        self.accountID = accountID
+        self.plan = plan
     }
 
     /// "ramit" out of "ramit@example.com", enough to tell accounts apart in a

@@ -1,7 +1,8 @@
 # Janus
 
-A small macOS app for people who keep more than one Claude Code account, and who
-have noticed how much disk the tools they use every day quietly hold onto.
+A small macOS app for people who keep more than one Claude Code or Codex
+account, and who have noticed how much disk the tools they use every day quietly
+hold onto.
 
 [![CI](https://github.com/RamitVishwakarma/Janus/actions/workflows/ci.yml/badge.svg)](https://github.com/RamitVishwakarma/Janus/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/RamitVishwakarma/Janus?sort=semver)](https://github.com/RamitVishwakarma/Janus/releases/latest)
@@ -12,12 +13,14 @@ have noticed how much disk the tools they use every day quietly hold onto.
 
 One click moves the live session, and the account it displaces is saved first.
 
-It does two things:
+It does three things, one tab each:
 
 - **Switches Claude Code accounts.** Signing in as another account normally means
   signing out first and typing the whole thing again. Janus saves each
   account's session and puts it back on demand, so the second account is one click
   away instead of one login away.
+- **Switches Codex accounts.** The same, for OpenAI's Codex, in a tab of its own.
+  See [Codex](#codex).
 - **Clears developer caches.** A list of directories that are safe to delete,
   measured and shown with what each one costs to lose. Everything goes to the
   Trash rather than being deleted, so any decision can be taken back.
@@ -92,9 +95,10 @@ increasingly wrong the longer it sits there.
 
 **Refresh** goes and asks. It calls Anthropic's usage endpoint once per account,
 with the tokens that account already has saved, and shows what comes back. That
-is the only network request Janus makes, it goes nowhere but `api.anthropic.com`
-and `platform.claude.com`, and nothing is sent that is not the account's own
-credentials. The line under each pair of bars says which of the two you are
+is the only network request Janus makes for Claude, it goes nowhere but
+`api.anthropic.com` and `platform.claude.com`, and nothing is sent that is not
+the account's own credentials. The Codex tab's equivalent is described under
+[Codex](#codex). The line under each pair of bars says which of the two you are
 looking at, so a fetched figure and a three-day-old one are never confusable.
 
 Two things happen on their own, without the button:
@@ -135,7 +139,8 @@ Three things follow from that, and are worth knowing before you trust it:
 
 - **Nothing leaves the Mac except a usage request you asked for.** There is no
   server and no telemetry. The one thing that goes out is Refresh asking
-  Anthropic for your own figures with your own tokens, described above.
+  Anthropic, or OpenAI on the Codex tab, for your own figures with your own
+  tokens, described above.
 - **The settings file is written back whole.** It belongs to another program and
   gains keys between releases, so Janus parses what it needs and preserves
   everything else byte for byte.
@@ -153,6 +158,49 @@ Signing in outside the app is handled too. If the live account is not one
 Janus knows about, it is saved as a new account rather than overwritten,
 because those credentials exist nowhere else.
 
+## Codex
+
+The **Codex** tab does for Codex what the Claude tab does for Claude Code. It
+works the way [codex-switcher](https://github.com/Lampese/codex-switcher) does,
+by swapping one file:
+
+| Part | Where it lives |
+| --- | --- |
+| The whole sign-in, tokens included | `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`) |
+
+Saved sign-ins go into the login keychain under the service `Janus Codex`, one
+entry per account holding that account's entire `auth.json`; the list of accounts
+is `~/Library/Application Support/Janus/Codex/roster.json`. The live file is
+written owner-only (`0600`) and renamed into place, so Codex never reads half of
+one.
+
+To add accounts: save the one Codex is signed into, run `codex logout` and
+`codex login` as the next one, and save that too. ChatGPT sign-ins are listed by
+email with their plan beside it, and the same email in two workspaces, a
+personal plan and a team plan say, is two accounts. API-key sign-ins work too,
+listed by the key's last four characters.
+
+Things specific to Codex:
+
+- **Quit Codex before switching.** Codex renews its own sign-in every few days
+  and writes the result back to `auth.json`. One that is still running keeps the
+  account it started with, and can write it back over the one you switched to.
+  Janus says so after a switch when it can see Codex running.
+- **The displaced sign-in is saved again on every switch.** ChatGPT refresh
+  tokens are single-use, and the copy saved when an account was added stops
+  working once Codex has renewed it. Saving the live file at the moment it is
+  switched away from is what keeps switching back working.
+- **Usage comes from Refresh only.** Codex does not write its limits anywhere
+  Janus can read them for free, so figures appear when you press Refresh and
+  last as long as the app is open. Refresh asks `chatgpt.com` for each
+  account's five-hour and weekly limits, the request Codex makes for `/status`,
+  renewing a saved account's tokens at `auth.openai.com` first if they have run
+  out. The signed-in account is never renewed, for the same reason as on the
+  Claude side.
+- **Only file-based sign-ins.** If Codex is configured to keep its credentials
+  in the keychain (`cli_auth_credentials_store = "keychain"`), there is no
+  `auth.json` to swap, and the tab will say nobody is signed in.
+
 ## Clearing caches
 
 The Storage tab measures a fixed list of cache directories: package managers,
@@ -161,7 +209,7 @@ build caches, browser and editor caches. Two rules keep it boring:
 - **Nothing is deleted.** `FileManager.trashItem` moves things to the Trash.
 - **Only caches inside your home directory can be touched.** Anything outside it
   is refused, as are the directories everything else lives inside, among them
-  `~/Desktop`, `~/Library`, `~/.ssh` and `~/.claude`. This is enforced in code,
+  `~/Desktop`, `~/Library`, `~/.ssh`, `~/.claude` and `~/.codex`. This is enforced in code,
   not by being careful when editing the list, and there is a test asserting every
   entry in the catalogue passes it.
 

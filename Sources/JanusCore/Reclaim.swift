@@ -15,7 +15,7 @@ public enum TrashPolicy {
         "", "Desktop", "Documents", "Downloads", "Movies", "Music", "Pictures",
         "Public", "Applications", "Library", "Library/Caches",
         "Library/Application Support", "Library/Developer", "Library/Developer/Xcode",
-        ".ssh", ".gnupg", ".config", ".cache", ".claude", ".local", "go", "Projects"
+        ".ssh", ".gnupg", ".config", ".cache", ".claude", ".codex", ".local", "go", "Projects"
     ]
 
     public static func permits(_ url: URL,

@@ -38,18 +38,27 @@ Useful context for anyone assessing a report. The app:
   one-shot call lives.
 - **Reads and writes `~/.claude.json`** (or `~/.claude/.claude.json`, if that is
   where the installed Claude Code keeps it).
+- **Reads and writes `~/.codex/auth.json`** (or `$CODEX_HOME/auth.json`), which
+  holds the signed-in Codex account's tokens or API key. Written to a new file
+  created with mode `0600` and renamed into place.
+- **Stores saved Codex sign-ins** as keychain entries under the service
+  `Janus Codex`, each holding one account's whole `auth.json`, with the list of
+  accounts in `~/Library/Application Support/Janus/Codex/roster.json`.
 - **Stores saved sessions** as keychain entries under the service `Janus`,
   and files in `~/Library/Application Support/Janus/` created with mode
   `0600` inside a directory created with mode `0700`.
 - **Moves cache directories to the Trash**, restricted to paths inside the user's
   home directory that pass `TrashPolicy` in
   `Sources/JanusCore/Reclaim.swift`. Nothing is deleted outright.
-- **Runs two external commands**, `/usr/bin/security` and `/usr/bin/du`, both by
-  absolute path and with no shell.
+- **Runs three external commands**, `/usr/bin/security`, `/usr/bin/du` and
+  `/usr/bin/pgrep` (to tell whether Codex is running), all by absolute path and
+  with no shell.
 
-The app makes no network requests. There is no networking code in the repository,
-and usage figures shown in the interface are read from the settings file Claude
-Code writes rather than fetched from anywhere.
+The only network requests are the usage fetches: to `api.anthropic.com` and
+`platform.claude.com` for Claude Code accounts, and to `chatgpt.com` and
+`auth.openai.com` for Codex accounts, each made with that account's own tokens.
+The Codex request carries a browser `User-Agent`, as codex-switcher's does,
+because `chatgpt.com` challenges anything else.
 
 The app is deliberately not sandboxed, because the App Sandbox would block the
 keychain entry and settings file it exists to move. It is signed ad-hoc rather

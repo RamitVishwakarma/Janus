@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A Codex tab, for switching between OpenAI Codex accounts the way the Claude
+  tab switches Claude Code ones. The window's tabs are now Claude, Codex and
+  Storage. Codex keeps its whole sign-in in `~/.codex/auth.json`, so a switch
+  saves that file under the account it belongs to and writes the other
+  account's in its place; saved sign-ins live in the login keychain under
+  `Janus Codex`. The displaced sign-in is saved again on every switch, because
+  Codex rotates its single-use refresh tokens and an older copy stops working.
+  The same email in two ChatGPT workspaces is kept as two accounts, and API-key
+  sign-ins are supported. Refresh fetches each ChatGPT account's five-hour and
+  weekly limits from OpenAI, and a switch made while Codex is running says so,
+  since a running Codex can write its old account back.
+- The menu bar lists the Codex account alongside the Claude Code one, with a
+  one-click switch to the next.
+- `~/.codex` is guarded from cache clearing, as `~/.claude` already was.
+
 ## [1.1.0] - 2026-09-27
 
 ### Added
