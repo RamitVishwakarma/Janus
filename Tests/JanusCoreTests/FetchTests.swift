@@ -238,7 +238,7 @@ final class FetchTests: XCTestCase {
 
     func testTokensInAShapeNothingUnderstandsAreNotSilentlyOverwritten() async throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "parked@example.com", token: "not-json-at-all")
+        try sandbox.signIn(email: "parked@example.com", token: "example-not-json-at-all")
         try sandbox.switcher.adoptCurrentAccount()
         try sandbox.signIn(email: "live@example.com", credentials: Sandbox.oauthBlob())
         try sandbox.switcher.adoptCurrentAccount()
@@ -250,7 +250,7 @@ final class FetchTests: XCTestCase {
         } catch {}
 
         let raw = try sandbox.secrets.read(sandbox.vault.credentialAddress(for: parked.id))
-        XCTAssertEqual(String(decoding: raw, as: UTF8.self), "not-json-at-all",
+        XCTAssertEqual(String(decoding: raw, as: UTF8.self), "example-not-json-at-all",
                        "a session Janus cannot read is still a session that switching restores")
     }
 }

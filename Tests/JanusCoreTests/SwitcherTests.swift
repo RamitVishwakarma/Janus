@@ -5,7 +5,7 @@ final class SwitcherTests: XCTestCase {
 
     func testAddingTheCurrentAccountSavesBothHalves() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
 
         let outcome = try sandbox.switcher.adoptCurrentAccount()
         let roster = try sandbox.switcher.roster()
@@ -41,17 +41,17 @@ final class SwitcherTests: XCTestCase {
     func testSwitchingSwapsTheLiveSession() throws {
         let sandbox = try Sandbox()
 
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
         try sandbox.switcher.adoptCurrentAccount()
 
-        try sandbox.signIn(email: "second@example.com", token: "second-token")
+        try sandbox.signIn(email: "second@example.com", token: "example-second-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         let first = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "first@example.com"))
         let outcome = try sandbox.switcher.activate(first.id)
 
         XCTAssertEqual(sandbox.liveEmail, "first@example.com")
-        XCTAssertEqual(sandbox.liveToken, "first-token")
+        XCTAssertEqual(sandbox.liveToken, "example-first-token")
         XCTAssertEqual(try sandbox.switcher.roster().active?.email, "first@example.com")
         XCTAssertTrue(outcome.headline.contains("first@example.com"))
     }
@@ -59,9 +59,9 @@ final class SwitcherTests: XCTestCase {
     func testSwitchingSavesTheAccountItLeaves() throws {
         let sandbox = try Sandbox()
 
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
         try sandbox.switcher.adoptCurrentAccount()
-        try sandbox.signIn(email: "second@example.com", token: "second-token")
+        try sandbox.signIn(email: "second@example.com", token: "example-second-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         let first = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "first@example.com"))
@@ -72,16 +72,16 @@ final class SwitcherTests: XCTestCase {
         try sandbox.switcher.activate(second.id)
 
         XCTAssertEqual(sandbox.liveEmail, "second@example.com")
-        XCTAssertEqual(sandbox.liveToken, "second-token")
+        XCTAssertEqual(sandbox.liveToken, "example-second-token")
     }
 
     func testSwitchingAwayFromAnUnmanagedAccountKeepsIt() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "saved@example.com", token: "saved-token")
+        try sandbox.signIn(email: "saved@example.com", token: "example-saved-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         // Somebody signs in by hand, outside the app.
-        try sandbox.signIn(email: "stranger@example.com", token: "stranger-token")
+        try sandbox.signIn(email: "stranger@example.com", token: "example-stranger-token")
 
         let saved = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "saved@example.com"))
         let outcome = try sandbox.switcher.activate(saved.id)
@@ -95,9 +95,9 @@ final class SwitcherTests: XCTestCase {
 
     func testARefusedKeychainStopsTheSwitchRatherThanLoseTheSession() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
         try sandbox.switcher.adoptCurrentAccount()
-        try sandbox.signIn(email: "second@example.com", token: "second-token")
+        try sandbox.signIn(email: "second@example.com", token: "example-second-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         let first = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "first@example.com"))
@@ -121,7 +121,7 @@ final class SwitcherTests: XCTestCase {
 
     func testSwitchingAwayFromAnAccountWhoseTokensAreAlreadyGoneIsAllowed() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "saved@example.com", token: "saved-token")
+        try sandbox.signIn(email: "saved@example.com", token: "example-saved-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         // Settings still name an account, but its tokens have been signed out
@@ -171,14 +171,14 @@ final class SwitcherTests: XCTestCase {
 
     func testSwitchingBackToAStaleActiveRecordIsAllowed() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
         try sandbox.switcher.adoptCurrentAccount()
-        try sandbox.signIn(email: "second@example.com", token: "second-token")
+        try sandbox.signIn(email: "second@example.com", token: "example-second-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         // Signing in by hand leaves the roster still naming the previous account
         // as active. Asking to switch to it is then a real request, not a no-op.
-        try sandbox.signIn(email: "first@example.com", token: "first-token")
+        try sandbox.signIn(email: "first@example.com", token: "example-first-token")
         let second = try XCTUnwrap(sandbox.switcher.roster().profile(withEmail: "second@example.com"))
 
         XCTAssertNoThrow(try sandbox.switcher.activate(second.id))
@@ -194,7 +194,8 @@ final class SwitcherTests: XCTestCase {
 
         // Live session says a@, so the next one round is b@, not whatever
         // followed the last account the app itself switched to.
-        try sandbox.signIn(email: "a@example.com", token: "a@example.com")
+        let live = "a@example.com"
+        try sandbox.signIn(email: live, token: live)
         try sandbox.switcher.switchToNext()
 
         XCTAssertEqual(sandbox.liveEmail, "b@example.com")
@@ -202,7 +203,7 @@ final class SwitcherTests: XCTestCase {
 
     func testSwitchingToAnAccountWithNoSavedSessionChangesNothing() throws {
         let sandbox = try Sandbox()
-        try sandbox.signIn(email: "live@example.com", token: "live-token")
+        try sandbox.signIn(email: "live@example.com", token: "example-live-token")
         try sandbox.switcher.adoptCurrentAccount()
 
         // A roster entry whose saved halves were never written.
@@ -213,7 +214,7 @@ final class SwitcherTests: XCTestCase {
 
         XCTAssertThrowsError(try sandbox.switcher.activate(ghost.id))
         XCTAssertEqual(sandbox.liveEmail, "live@example.com")
-        XCTAssertEqual(sandbox.liveToken, "live-token")
+        XCTAssertEqual(sandbox.liveToken, "example-live-token")
     }
 
     func testSwitchingPreservesKeysTheAppDoesNotUnderstand() throws {
