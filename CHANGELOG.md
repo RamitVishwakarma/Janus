@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-click switch to the next.
 - `~/.codex` is guarded from cache clearing, as `~/.claude` already was.
 
+### Fixed
+
+- A settings file left in `~/.claude` without a sign-in, such as the one a Claude
+  Code started with `CLAUDE_CONFIG_DIR=~/.claude` leaves behind, no longer hides the real
+  session in `~/.claude.json`. Janus used to read the stub, report that no
+  account was signed in, and refuse to save one.
+
 ## [1.1.0] - 2026-09-27
 
 ### Added
