@@ -1,0 +1,9 @@
+# Configuration for the HOL AI plugin scanner, which the awesome-ai-plugins
+# catalog runs against this repository.
+#
+# The unit tests sign fake accounts in with obviously fake session tokens, such
+# as "first-token" and "not-json-at-all". The scanner's secret heuristic reads
+# those as credentials committed to source control. They are fixtures, and the
+# tests are not shipped in the app, so the test tree is excluded.
+[scanner]
+ignore_paths = ["Tests/**"]
