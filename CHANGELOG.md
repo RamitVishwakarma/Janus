@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-28
+
 ### Added
 
 - A Codex tab, for switching between OpenAI Codex accounts the way the Claude
@@ -19,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The same email in two ChatGPT workspaces is kept as two accounts, and API-key
   sign-ins are supported. Refresh fetches each ChatGPT account's five-hour and
   weekly limits from OpenAI, and a switch made while Codex is running says so,
-  since a running Codex can write its old account back.
+  since a running Codex can write its old account back. To add a second
+  account, delete `~/.codex/auth.json` and run `codex login`. `codex logout`
+  revokes the sign-in at OpenAI, which kills the copy Janus just saved.
 - The menu bar lists the Codex account alongside the Claude Code one, with a
   one-click switch to the next.
 - `~/.codex` is guarded from cache clearing, as `~/.claude` already was.
@@ -102,7 +106,8 @@ First public release.
   directory and anything held open by a running app.
 - Universal builds published as a `.dmg` and a `.zip` with SHA-256 checksums.
 
-[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RamitVishwakarma/Janus/releases/tag/v1.0.0

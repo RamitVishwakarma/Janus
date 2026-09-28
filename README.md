@@ -174,8 +174,10 @@ is `~/Library/Application Support/Janus/Codex/roster.json`. The live file is
 written owner-only (`0600`) and renamed into place, so Codex never reads half of
 one.
 
-To add accounts: save the one Codex is signed into, run `codex logout` and
-`codex login` as the next one, and save that too. ChatGPT sign-ins are listed by
+To add accounts: save the one Codex is signed into, delete `~/.codex/auth.json`,
+run `codex login` as the next one, and save that too. Do not use `codex logout`
+for this. It revokes the sign-in at OpenAI, so the copy Janus just saved stops
+working with it. Deleting the file tells OpenAI nothing. ChatGPT sign-ins are listed by
 email with their plan beside it, and the same email in two workspaces, a
 personal plan and a team plan say, is two accounts. API-key sign-ins work too,
 listed by the key's last four characters.
