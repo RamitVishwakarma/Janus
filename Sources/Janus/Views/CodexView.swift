@@ -159,8 +159,12 @@ struct CodexView: View {
                  Codex keeps its sign-in in ~/.codex/auth.json, and Janus saves \
                  whichever account that file holds. It cannot sign in for you.
 
-                 To add a second one: run codex logout, then codex login as the other \
-                 account, then come back and press Save current account.
+                 To add a second one: save this one first, then delete \
+                 ~/.codex/auth.json, run codex login as the other account, and \
+                 come back and press Save current account.
+
+                 Do not use codex logout for this. It revokes the sign-in at \
+                 OpenAI, so the copy Janus saved stops working along with it.
                  """)
                 .font(.callout)
                 .foregroundStyle(.secondary)
