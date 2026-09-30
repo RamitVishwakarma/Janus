@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Saving the current account no longer reports "No Claude Code account is signed
+  in on this Mac" when one is. On a Mac that has run more than one version of
+  Claude Code, `~/.claude/.claude.json` and `~/.claude.json` can both exist with
+  only one of them naming the account; Janus now reads whichever file records a
+  signed-in account rather than always preferring the nested one. It also finds
+  the token when Claude Code filed it in the keychain under the service name
+  rather than the login name, instead of assuming the login name and reading it
+  as signed out.
+
 ## [1.2.0] - 2026-09-28
 
 ### Added
