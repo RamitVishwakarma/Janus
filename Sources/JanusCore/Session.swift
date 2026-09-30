@@ -26,16 +26,42 @@ public struct Session: Sendable {
     public static func current(
         home: URL = URL(fileURLWithPath: NSHomeDirectory()),
         user: String = NSUserName(),
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        secrets: SecretStore = SystemKeychain()
     ) -> Session {
         let nested = home.appendingPathComponent(".claude/.claude.json")
         let legacy = home.appendingPathComponent(".claude.json")
-        let settings = fileManager.fileExists(atPath: nested.path) ? nested : legacy
+
+        // A Mac that has run more than one version of Claude Code can hold both
+        // files, and only one of them names the account — the other is a stale
+        // shell left behind by an upgrade. Location alone is not enough to tell
+        // them apart, so prefer whichever file actually records a signed-in
+        // account, and fall back to the newer-install-wins rule only when
+        // neither does (a fresh install, or one signed out).
+        let settings = [nested, legacy].first { namesAccount($0, fileManager: fileManager) }
+            ?? (fileManager.fileExists(atPath: nested.path) ? nested : legacy)
+
+        // Claude Code has filed its tokens under the login name in some versions
+        // and under the service name itself in others. The account is half of a
+        // keychain entry's address, so guessing it wrong is indistinguishable
+        // from being signed out. Ask the keychain which address is really there;
+        // when nothing is, fall back to what current Claude Code writes, so the
+        // entry a later sign-in creates is the one that gets found.
+        let account = [user, credentialService].first {
+            secrets.contains(SecretAddress(service: credentialService, account: $0))
+        } ?? credentialService
 
         return Session(
-            credentials: SecretAddress(service: credentialService, account: user),
+            credentials: SecretAddress(service: credentialService, account: account),
             settingsURL: settings
         )
+    }
+
+    /// Whether a settings file both exists and records a signed-in account, used
+    /// to pick the live one when more than one file is present.
+    private static func namesAccount(_ url: URL, fileManager: FileManager) -> Bool {
+        guard let data = fileManager.contents(atPath: url.path) else { return false }
+        return SessionSettings(raw: data).email != nil
     }
 }
 
