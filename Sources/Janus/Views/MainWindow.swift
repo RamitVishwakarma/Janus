@@ -1,20 +1,17 @@
 import SwiftUI
 import JanusCore
 
-/// The window. One tab for each tool whose accounts it switches, and one for
-/// the caches.
+/// The window. One tab for each tool whose accounts it switches.
 struct MainWindow: View {
 
     @ObservedObject var accounts: AccountsModel
     @ObservedObject var codex: CodexModel
-    @ObservedObject var caches: CachesModel
 
     @State private var section: Section = .claude
 
     enum Section: String, CaseIterable, Identifiable {
         case claude = "Claude"
         case codex = "Codex"
-        case storage = "Storage"
         var id: String { rawValue }
     }
 
@@ -24,16 +21,14 @@ struct MainWindow: View {
             Divider()
 
             switch section {
-            case .claude:  AccountsView(model: accounts)
-            case .codex:   CodexView(model: codex)
-            case .storage: StorageView(model: caches)
+            case .claude: AccountsView(model: accounts)
+            case .codex:  CodexView(model: codex)
             }
         }
         .frame(minWidth: 560, minHeight: 520)
         .onAppear {
             accounts.reload()
             codex.reload()
-            caches.scan()
         }
     }
 
@@ -44,7 +39,7 @@ struct MainWindow: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 300)
+            .frame(width: 200)
 
             Spacer()
 

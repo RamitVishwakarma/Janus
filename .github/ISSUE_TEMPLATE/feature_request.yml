@@ -29,7 +29,7 @@ body:
     attributes:
       label: Scope
       description: |
-        Janus is deliberately small: it switches accounts and clears caches,
+        Janus is deliberately small: it switches accounts,
         on macOS, without network access or third-party dependencies.
       options:
         - label: I have read the README and this fits what the app is for.

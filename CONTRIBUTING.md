@@ -1,7 +1,6 @@
 # Contributing
 
-Thanks for taking a look. Bug reports, cache-catalogue additions and pull
-requests are all welcome.
+Thanks for taking a look. Bug reports and pull requests are all welcome.
 
 ## Getting set up
 
@@ -22,7 +21,7 @@ CI run the suite for you.
 
 | Path | What belongs there |
 | --- | --- |
-| `Sources/JanusCore` | Sessions, storage, switching, the cache catalogue. No SwiftUI, and nothing that needs a window. |
+| `Sources/JanusCore` | Sessions, storage, switching. No SwiftUI, and nothing that needs a window. |
 | `Sources/Janus` | The SwiftUI app: window, menu bar item, view models. |
 | `Tests/JanusCoreTests` | Tests for everything in `JanusCore`. |
 | `scripts/` | Build-time helpers, called by `build.sh` and CI. |
@@ -44,27 +43,6 @@ core.
 - **No new dependencies** without a reason in the pull request description.
   Janus depends on nothing but the system frameworks today, which is a
   large part of why it is auditable.
-
-## Adding a cache target
-
-This is the easiest useful contribution. Add an entry to
-`Sources/JanusCore/CacheCatalog.swift`:
-
-```swift
-CacheEntry(id: "cargo", name: "Cargo registry",
-           note: "Downloaded crate sources, refetched on the next build.",
-           path: ".cargo/registry")
-```
-
-- `path` is relative to the home directory, always.
-- `note` is read by someone who has never used the tool. Say what is lost.
-- Set `ownerBundleID` and `clearableWhileRunning: false` if an app holds the
-  directory open while it runs.
-- The target must be something that regenerates itself. If losing it costs work
-  rather than time, it does not belong in this list.
-
-`CacheCatalogTests` asserts every entry passes `TrashPolicy`, so a mistyped path
-fails CI rather than someone's afternoon.
 
 ## Releases
 

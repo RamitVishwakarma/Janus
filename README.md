@@ -1,8 +1,7 @@
 # Janus
 
 A small macOS app for people who keep more than one Claude Code or Codex
-account, and who have noticed how much disk the tools they use every day quietly
-hold onto.
+account.
 
 [![CI](https://github.com/RamitVishwakarma/Janus/actions/workflows/ci.yml/badge.svg)](https://github.com/RamitVishwakarma/Janus/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/RamitVishwakarma/Janus?sort=semver)](https://github.com/RamitVishwakarma/Janus/releases/latest)
@@ -13,7 +12,7 @@ hold onto.
 
 One click moves the live session, and the account it displaces is saved first.
 
-It does three things, one tab each:
+It does two things, one tab each:
 
 - **Switches Claude Code accounts.** Signing in as another account normally means
   signing out first and typing the whole thing again. Janus saves each
@@ -21,9 +20,8 @@ It does three things, one tab each:
   away instead of one login away.
 - **Switches Codex accounts.** The same, for OpenAI's Codex, in a tab of its own.
   See [Codex](#codex).
-- **Clears developer caches.** A list of directories that are safe to delete,
-  measured and shown with what each one costs to lose. Everything goes to the
-  Trash rather than being deleted, so any decision can be taken back.
+
+Cache clearing, which used to be a third tab, was removed in 2.0.0.
 
 ## Install
 
@@ -203,40 +201,6 @@ Things specific to Codex:
   in the keychain (`cli_auth_credentials_store = "keychain"`), there is no
   `auth.json` to swap, and the tab will say nobody is signed in.
 
-## Clearing caches
-
-The Storage tab measures a fixed list of cache directories: package managers,
-build caches, browser and editor caches. Two rules keep it boring:
-
-- **Nothing is deleted.** `FileManager.trashItem` moves things to the Trash.
-- **Only caches inside your home directory can be touched.** Anything outside it
-  is refused, as are the directories everything else lives inside, among them
-  `~/Desktop`, `~/Library`, `~/.ssh`, `~/.claude` and `~/.codex`. This is enforced in code,
-  not by being careful when editing the list, and there is a test asserting every
-  entry in the catalogue passes it.
-
-Caches belonging to a running app are shown greyed out with a **Quit it** link
-rather than cleared underneath it. Clearing an editor's cache while the editor
-holds files open in it is a good way to confuse the editor.
-
-Some paths, `~/Downloads` and `~/.Trash` among them, are behind macOS privacy
-controls. Grant Full Disk Access in System Settings → Privacy & Security if you
-want them covered.
-
-### Adding a cache to the list
-
-Add an entry to `CacheEntry.developerTools` or `CacheEntry.applications` in
-[`Sources/JanusCore/CacheCatalog.swift`](Sources/JanusCore/CacheCatalog.swift):
-
-```swift
-CacheEntry(id: "cargo", name: "Cargo registry",
-           note: "Downloaded crate sources, refetched on the next build.",
-           path: ".cargo/registry")
-```
-
-Paths are relative to the home directory. Entries that do not exist on a given
-Mac are filtered out when scanning, so listing something niche costs nothing.
-
 ## Known limitations
 
 - **Ad-hoc signed.** Every build produces a different signature, so macOS treats
@@ -261,7 +225,7 @@ screen:
 
 | Target | What is in it |
 | --- | --- |
-| `JanusCore` | Sessions, storage, the switch itself, the cache catalogue and its safety rules. No SwiftUI. |
+| `JanusCore` | Sessions, storage and the switch itself. No SwiftUI. |
 | `Janus` | The SwiftUI window, the menu bar item, and the models behind them. |
 | `JanusCoreTests` | Everything in `JanusCore`, against a temporary home directory and an in-memory keychain. |
 

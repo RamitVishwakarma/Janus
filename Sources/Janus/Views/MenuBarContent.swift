@@ -7,7 +7,6 @@ struct MenuBarContent: View {
 
     @ObservedObject var accounts: AccountsModel
     @ObservedObject var codex: CodexModel
-    @ObservedObject var caches: CachesModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -39,19 +38,11 @@ struct MenuBarContent: View {
 
         Divider()
 
-        Button(storageTitle) {
-            caches.scan()
-            reveal()
-        }
-
-        Divider()
-
         Button("Open Janus…") { reveal() }
             .keyboardShortcut("o")
         Button("Refresh") {
             accounts.refresh()
             if !codex.profiles.isEmpty { codex.refresh() }
-            caches.scan()
         }
         Button("Quit Janus") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
@@ -116,11 +107,6 @@ struct MenuBarContent: View {
     private func label(for profile: Profile) -> String {
         let marker = accounts.isActive(profile) ? "●" : "○"
         return "\(marker)  \(profile.email)"
-    }
-
-    private var storageTitle: String {
-        let bytes = caches.clearableBytes
-        return bytes > 0 ? "Clear caches… (\(DiskUsage.describe(bytes)))" : "Clear caches…"
     }
 
     /// Opening a window from the menu bar is not enough on its own: the app is

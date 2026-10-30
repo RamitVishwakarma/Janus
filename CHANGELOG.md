@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-30
+
+### Removed
+
+- The Storage tab and the menu bar's Clear caches item. Cache clearing has
+  moved out of Janus into an app of its own, which leaves Janus to switch
+  Claude Code and Codex accounts. The window's tabs are now Claude and Codex,
+  and Janus no longer measures directories with `/usr/bin/du` or moves anything
+  to the Trash. Nothing you saved is touched: accounts, sessions and the
+  keychain entries behind them carry over as they are.
+
 ## [1.2.1] - 2026-10-05
 
 ### Fixed
@@ -120,7 +131,8 @@ First public release.
   directory and anything held open by a running app.
 - Universal builds published as a `.dmg` and a `.zip` with SHA-256 checksums.
 
-[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.0.1...v1.1.0
