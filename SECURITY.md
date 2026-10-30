@@ -47,12 +47,8 @@ Useful context for anyone assessing a report. The app:
 - **Stores saved sessions** as keychain entries under the service `Janus`,
   and files in `~/Library/Application Support/Janus/` created with mode
   `0600` inside a directory created with mode `0700`.
-- **Moves cache directories to the Trash**, restricted to paths inside the user's
-  home directory that pass `TrashPolicy` in
-  `Sources/JanusCore/Reclaim.swift`. Nothing is deleted outright.
-- **Runs three external commands**, `/usr/bin/security`, `/usr/bin/du` and
-  `/usr/bin/pgrep` (to tell whether Codex is running), all by absolute path and
-  with no shell.
+- **Runs two external commands**, `/usr/bin/security` and `/usr/bin/pgrep` (to
+  tell whether Codex is running), both by absolute path and with no shell.
 
 The only network requests are the usage fetches: to `api.anthropic.com` and
 `platform.claude.com` for Claude Code accounts, and to `chatgpt.com` and
