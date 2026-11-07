@@ -61,7 +61,7 @@ jobs:
             echo 'With Homebrew:'
             echo
             echo '```sh'
-            echo 'brew install --cask --no-quarantine ramitvishwakarma/tap/janus'
+            echo 'brew install --cask ramitvishwakarma/tap/janus'
             echo '```'
             echo
             echo 'Or download the `.dmg`, open it, and drag Janus to Applications.'

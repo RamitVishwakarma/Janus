@@ -28,7 +28,7 @@ Cache clearing, which used to be a third tab, was removed in 2.0.0.
 With Homebrew:
 
 ```sh
-brew install --cask --no-quarantine ramitvishwakarma/tap/janus
+brew install --cask ramitvishwakarma/tap/janus
 ```
 
 Or download the latest `.dmg` from
@@ -37,9 +37,8 @@ and drag Janus to Applications. The build is universal, covering Apple silicon
 and Intel.
 
 The app is signed ad-hoc rather than with a paid Apple Developer certificate, so
-macOS quarantines it on first launch and says the developer cannot be verified.
-`--no-quarantine` tells Homebrew to skip that flag. After a download by hand,
-clear it once:
+macOS quarantines it and refuses to open it. The Homebrew cask clears that flag
+for you. After a download by hand, clear it once:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/Janus.app
