@@ -243,6 +243,18 @@ final class CodexUsageTests: XCTestCase {
         XCTAssertEqual(usage.sevenDay?.percentUsed, 55)
     }
 
+    func testAMonthlyWindowKeepsItsLengthSoItIsNotCalledWeekly() {
+        let usage = Usage(codex: [
+            "rate_limit": [
+                "primary_window": ["used_percent": 59, "limit_window_seconds": 2_592_000]
+            ]
+        ], measuredAt: Date())
+
+        XCTAssertEqual(usage.sevenDay?.percentUsed, 59)
+        XCTAssertEqual(usage.sevenDay?.length, 2_592_000)
+        XCTAssertEqual(usage.sevenDay?.caption(otherwise: "Weekly"), "Monthly")
+    }
+
     func testAResetGivenAsADelayIsCountedFromTheMeasurement() {
         let moment = Date(timeIntervalSince1970: 1_800_000_000)
         let usage = Usage(codex: [

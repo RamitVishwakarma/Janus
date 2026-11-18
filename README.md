@@ -76,10 +76,16 @@ switching between them is one click, or `⌘S` from the menu bar.
 
 ![The Janus window, with both accounts and how much of each limit they have spent](demo/screenshot.png)
 
-The menu bar item shows which account is live. The window shows both accounts
-with how much of their five-hour and weekly limits each has spent. That is the
-number to look at when the decision you are making is *which account has room
-left*.
+The window shows every account with how much of its five-hour and weekly limits
+it has spent. That is the number to look at when the decision you are making is
+*which account has room left*.
+
+The menu bar item shows the same without the window. Click it and a panel lists
+every Claude Code and Codex account with its limits as bars, the percentage
+spent, when each resets and how old the figures are, with a **Switch** button
+beside each account not in use. **Refresh usage** (`⌘R`) fetches new figures
+from there too. The window is still where accounts are saved, reordered and
+removed.
 
 ## Where the usage figures come from
 
@@ -192,7 +198,8 @@ Things specific to Codex:
 - **Usage comes from Refresh only.** Codex does not write its limits anywhere
   Janus can read them for free, so figures appear when you press Refresh and
   last as long as the app is open. Refresh asks `chatgpt.com` for each
-  account's five-hour and weekly limits, the request Codex makes for `/status`,
+  account's limits (five-hour and weekly on Plus, monthly on Go and Free, each
+  named by the length OpenAI gives it), the request Codex makes for `/status`,
   renewing a saved account's tokens at `auth.openai.com` first if they have run
   out. The signed-in account is never renewed, for the same reason as on the
   Claude side.

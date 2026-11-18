@@ -129,4 +129,40 @@ final class UsageTests: XCTestCase {
         XCTAssertEqual(Elapsed.since(now.addingTimeInterval(-3600), now: now), "1h ago")
         XCTAssertEqual(Elapsed.since(now.addingTimeInterval(-86400 * 3), now: now), "3d ago")
     }
+
+
+    func testAWindowIsNamedByItsLengthWhereItHasOne() {
+        func caption(_ length: TimeInterval?) -> String {
+            Usage.Window(percentUsed: 1, resetsAt: nil, length: length).caption(otherwise: "slot")
+        }
+        XCTAssertEqual(caption(18_000), "5-hour")
+        XCTAssertEqual(caption(604_800), "Weekly")
+        XCTAssertEqual(caption(2_592_000), "Monthly",
+                       "Codex Go and Free plans have a thirty-day window")
+        XCTAssertEqual(caption(3 * 86_400), "3-day")
+        XCTAssertEqual(caption(nil), "slot", "Claude Code states no length")
+    }
+
+    func testTheMenuBarLineSaysHowOldAReadingIsAndWhoSaidSo() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let earlier = now.addingTimeInterval(-32 * 60)
+
+        XCTAssertEqual(Freshness.line(source: .liveSettings, measuredAt: earlier, now: now,
+                                      provider: "Anthropic"),
+                       "Updated 32m ago · Claude Code")
+        XCTAssertEqual(Freshness.line(source: .savedSettings,
+                                      measuredAt: now.addingTimeInterval(-3 * 86400 - 6 * 3600),
+                                      now: now, provider: "Anthropic"),
+                       "Updated 3d 6h ago · saved")
+        XCTAssertEqual(Freshness.line(source: .fetched, measuredAt: now, now: now,
+                                      provider: "OpenAI"),
+                       "Updated just now · OpenAI")
+    }
+
+    func testAnUndatedReadingStillSaysWhereItCameFrom() {
+        XCTAssertEqual(Freshness.line(source: .savedSettings, measuredAt: nil, provider: "Anthropic"),
+                       "Saved")
+        XCTAssertEqual(Freshness.line(source: .fetched, measuredAt: nil, provider: "OpenAI"),
+                       "OpenAI")
+    }
 }

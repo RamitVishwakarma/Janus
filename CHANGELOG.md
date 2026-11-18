@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-18
+
+### Changed
+
+- The menu bar item opens a panel instead of a menu. It shows every saved
+  Claude Code and Codex account with its five-hour and weekly limits as bars,
+  the percentage spent, when each resets, and how old the figures are, with a
+  Switch button beside each account that is not in use. Refresh usage, Open
+  Janus and Quit Janus sit at the bottom (`⌘R`, `⌘O`, `⌘Q`), and `⌘S` still
+  switches to the next Claude Code account. Reading figures and switching no
+  longer need the window open. A line that turns orange means a limit has
+  started over since its figures were taken.
+
+### Fixed
+
+- Codex limits are named by the length OpenAI gives them. The thirty-day limit
+  on Go and Free plans was labelled 7-day; it now reads Monthly. The window's
+  7-day label is now Weekly, matching the panel.
+
 ## [2.0.0] - 2026-10-30
 
 ### Removed
@@ -131,7 +150,8 @@ First public release.
   directory and anything held open by a running app.
 - Universal builds published as a `.dmg` and a `.zip` with SHA-256 checksums.
 
-[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/RamitVishwakarma/Janus/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/RamitVishwakarma/Janus/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/RamitVishwakarma/Janus/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/RamitVishwakarma/Janus/compare/v1.1.0...v1.2.0

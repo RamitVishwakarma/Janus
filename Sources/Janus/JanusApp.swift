@@ -9,8 +9,9 @@ struct JanusApp: App {
     @StateObject private var codex = CodexModel()
 
     var body: some Scene {
-        // The window is the main surface. Everything the app does is visible in
-        // it at once, which a menu bar dropdown is a poor place to discover.
+        // The window is where accounts are saved, ordered and removed. Reading
+        // the figures and switching are also in the menu bar panel below, so the
+        // window need not be open to see which account has room left.
         Window("Janus", id: WindowID.main) {
             MainWindow(accounts: accounts, codex: codex)
         }
@@ -22,15 +23,15 @@ struct JanusApp: App {
             }
         }
 
-        // The menu bar item is the shortcut: switch accounts without opening
-        // anything, and see which account is live at a glance. The title stays
-        // the Claude Code account, which is the one that has always been there.
+        // The menu bar item opens a panel with every account's limits and a
+        // switch beside each. The title stays the Claude Code account, which is
+        // the one that has always been there.
         MenuBarExtra {
-            MenuBarContent(accounts: accounts, codex: codex)
+            MenuBarPanel(accounts: accounts, codex: codex)
         } label: {
             Label(menuBarTitle, systemImage: "arrow.left.arrow.right.circle")
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
     }
 
     private var menuBarTitle: String {
