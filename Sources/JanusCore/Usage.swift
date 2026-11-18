@@ -14,9 +14,35 @@ public struct Usage: Equatable {
         public let percentUsed: Int
         public let resetsAt: Date?
 
-        public init(percentUsed: Int, resetsAt: Date?) {
+        /// How long the window runs, where the provider says. Codex does, and
+        /// its plans differ: Plus has five hours and a week, Go and Free have a
+        /// month. Claude Code does not, and its two are five hours and seven days
+        /// by the name they are filed under.
+        public let length: TimeInterval?
+
+        public init(percentUsed: Int, resetsAt: Date?, length: TimeInterval? = nil) {
             self.percentUsed = percentUsed
             self.resetsAt = resetsAt
+            self.length = length
+        }
+
+        /// What to call the window on screen: by its stated length where there
+        /// is one, and otherwise by the slot it was filed under.
+        ///
+        /// Anything a day or longer is filed as the weekly slot, so a monthly
+        /// window labelled by its slot would read "Weekly" beside a countdown of
+        /// twenty-two days.
+        public func caption(otherwise slot: String) -> String {
+            guard let length, length > 0 else { return slot }
+            let hours = Int((length / 3600).rounded())
+            if hours < 24 { return "\(max(hours, 1))-hour" }
+
+            let days = Int((length / 86400).rounded())
+            switch days {
+            case 7:      return "Weekly"
+            case 28...31: return "Monthly"
+            default:     return "\(days)-day"
+            }
         }
 
         /// True once the reset moment has gone by, which makes `percentUsed` the
@@ -187,5 +213,35 @@ public enum Elapsed {
         let days = hours / 24
         let remainder = hours % 24
         return remainder == 0 ? "\(days)d" : "\(days)d \(remainder)h"
+    }
+}
+
+/// The one line under a reading in the menu bar: how old the figures are, and
+/// who said so. Short enough to sit under a pair of bars in a 360-point panel.
+public enum Freshness {
+
+    /// "Updated 32m ago · Claude Code".
+    ///
+    /// `provider` names who a fetched figure came from, Anthropic or OpenAI. The
+    /// two read off disk are named by where they were read: the live file, which
+    /// Claude Code keeps moving while it runs, or the saved copy, which moves
+    /// only when its account is switched away from or fetched for. "Saved"
+    /// rather than "last session", because after a restart a figure fetched
+    /// yesterday is read back from that copy too.
+    public static func line(source: UsageSource,
+                            measuredAt: Date?,
+                            now: Date = Date(),
+                            provider: String) -> String {
+        let origin: String
+        switch source {
+        case .fetched:       origin = provider
+        case .liveSettings:  origin = "Claude Code"
+        case .savedSettings: origin = "saved"
+        }
+
+        guard let age = Elapsed.since(measuredAt, now: now) else {
+            return origin.prefix(1).uppercased() + origin.dropFirst()
+        }
+        return "Updated \(age) · \(origin)"
     }
 }

@@ -180,8 +180,7 @@ extension Usage {
                   let window = Usage.codexWindow(object, measuredAt: measuredAt)
             else { continue }
 
-            let length = (object["limit_window_seconds"] as? NSNumber)?.doubleValue
-            let weekly = length.map { $0 >= 24 * 60 * 60 } ?? slot.weeklyUnlessSaid
+            let weekly = window.length.map { $0 >= 24 * 60 * 60 } ?? slot.weeklyUnlessSaid
 
             if weekly {
                 if sevenDay == nil { sevenDay = window }
@@ -200,6 +199,8 @@ extension Usage {
         } else if let after = object["reset_after_seconds"] as? NSNumber {
             resetsAt = measuredAt.addingTimeInterval(after.doubleValue)
         }
-        return Window(percentUsed: percent, resetsAt: resetsAt)
+        return Window(percentUsed: percent,
+                      resetsAt: resetsAt,
+                      length: (object["limit_window_seconds"] as? NSNumber)?.doubleValue)
     }
 }

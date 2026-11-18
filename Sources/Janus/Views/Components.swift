@@ -78,37 +78,15 @@ struct LimitBar: View {
 
     private var hasReset: Bool { window.hasReset(by: now) }
 
-    private var tint: Color {
-        switch window.percentUsed {
-        case ..<50: return .green
-        case ..<80: return .yellow
-        default:    return .orange
-        }
-    }
-
     var body: some View {
         HStack(spacing: 7) {
             Text(caption)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .leading)
+                .frame(width: 44, alignment: .leading)
 
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.18))
-                    // Nothing spent draws nothing. The floor below is there to
-                    // keep 1% visible rather than to give 0% something to show,
-                    // and a window that has just started over is exactly where a
-                    // sliver of colour would be read as a sliver of spend.
-                    if !hasReset, window.percentUsed > 0 {
-                        Capsule()
-                            .fill(tint)
-                            .frame(width: max(2, geometry.size.width
-                                                 * Double(min(window.percentUsed, 100)) / 100))
-                    }
-                }
-            }
-            .frame(width: 88, height: 5)
+            Meter(window: window, now: now)
+                .frame(width: 88, height: 5)
 
             Text(hasReset ? "—" : "\(window.percentUsed)%")
                 .font(.system(.caption2, design: .monospaced))
@@ -124,6 +102,42 @@ struct LimitBar: View {
     }
 }
 
+/// The bar itself: a track, and as much colour along it as has been spent.
+struct Meter: View {
+    let window: Usage.Window
+    let now: Date
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.secondary.opacity(0.18))
+                // Nothing spent draws nothing. The floor below is there to keep
+                // 1% visible rather than to give 0% something to show, and a
+                // window that has just started over is exactly where a sliver of
+                // colour would be read as a sliver of spend.
+                if !window.hasReset(by: now), window.percentUsed > 0 {
+                    Capsule()
+                        .fill(window.tint)
+                        .frame(width: max(2, geometry.size.width
+                                             * Double(min(window.percentUsed, 100)) / 100))
+                }
+            }
+        }
+    }
+}
+
+extension Usage.Window {
+
+    /// Green with room to spare, yellow past half, orange near the end.
+    var tint: Color {
+        switch percentUsed {
+        case ..<50: return .green
+        case ..<80: return .yellow
+        default:    return .orange
+        }
+    }
+}
+
 /// Both limits plus a line saying how current the figures are, which matters
 /// because only one of the three ways they can arrive is current by definition.
 struct UsagePanel: View {
@@ -135,10 +149,10 @@ struct UsagePanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             if let window = usage.fiveHour {
-                LimitBar(caption: "5-hour", window: window, now: now)
+                LimitBar(caption: window.caption(otherwise: "5-hour"), window: window, now: now)
             }
             if let window = usage.sevenDay {
-                LimitBar(caption: "7-day", window: window, now: now)
+                LimitBar(caption: window.caption(otherwise: "Weekly"), window: window, now: now)
             }
 
             HStack(spacing: 5) {
